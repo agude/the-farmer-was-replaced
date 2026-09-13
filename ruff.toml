@@ -1,0 +1,36 @@
+target-version = "py310"
+extend-exclude = ["**/__builtins__.py"]
+
+# The game injects these names without Python imports. Keeping the list explicit
+# preserves Ruff's undefined-name checking for misspelled APIs.
+builtins = [
+    "East",
+    "Entities",
+    "Grounds",
+    "Items",
+    "North",
+    "South",
+    "West",
+    "can_harvest",
+    "get_entity_type",
+    "get_ground_type",
+    "get_pos_x",
+    "get_pos_y",
+    "get_water",
+    "get_world_size",
+    "harvest",
+    "move",
+    "plant",
+    "till",
+    "use_item",
+]
+
+[lint]
+select = [
+    "E4",  # Import and indentation errors.
+    "E7",  # Statement errors.
+    "E9",  # Runtime and syntax errors.
+    "F",   # Pyflakes defects.
+    "B",   # Likely bugs.
+    "RET", # Return-value defects.
+]

@@ -1,0 +1,20 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v9.0.0
+      - uses: extractions/setup-just@v4
+      - name: Install tools
+        run: just sync
+      - name: Run static checks
+        run: just lint
