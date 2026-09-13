@@ -23,10 +23,10 @@ def pumpkin_end_y() -> int:
 
 
 def is_pumpkin_tile(x = None, y = None) -> bool:
-	if x == None:
+	if x is None:
 		x = get_pos_x()
 
-	if y == None:
+	if y is None:
 		y = get_pos_y()
 
 	return (
@@ -66,7 +66,7 @@ def pumpkin_is_ready() -> bool:
 	#
 	# Empty tile.
 	#
-	if entity == None:
+	if entity is None:
 		plant_pumpkin()
 		water_if_dry(PUMPKIN_WATER_THRESHOLD)
 		return False
