@@ -1,0 +1,5 @@
+# Game-generated state
+*.json
+__builtins__.py
+__pycache__/
+*.py[cod]
