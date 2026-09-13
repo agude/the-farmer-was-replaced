@@ -19,30 +19,30 @@ def distance_to(target_x: int, target_y: int) -> int:
     return dx + dy
 
 
+def move_axis(
+    target: int,
+    current: int,
+    size: int,
+    positive_direction,
+    negative_direction,
+) -> None:
+    # Move along one wrapped axis using the shorter direction.
+    positive_steps = (target - current) % size
+
+    if positive_steps <= size // 2:
+        direction = positive_direction
+        steps = positive_steps
+    else:
+        direction = negative_direction
+        steps = size - positive_steps
+
+    for _ in range(steps):
+        move(direction)
+
+
 def move_to(target_x: int, target_y: int) -> None:
     # Move to a target using the shortest wrapped path on each axis.
     size = get_world_size()
 
-    current_x = get_pos_x()
-
-    east_steps = (target_x - current_x) % size
-    west_steps = (current_x - target_x) % size
-
-    if east_steps <= west_steps:
-        for _ in range(east_steps):
-            move(East)
-    else:
-        for _ in range(west_steps):
-            move(West)
-
-    current_y = get_pos_y()
-
-    north_steps = (target_y - current_y) % size
-    south_steps = (current_y - target_y) % size
-
-    if north_steps <= south_steps:
-        for _ in range(north_steps):
-            move(North)
-    else:
-        for _ in range(south_steps):
-            move(South)
+    move_axis(target_x, get_pos_x(), size, East, West)
+    move_axis(target_y, get_pos_y(), size, North, South)
