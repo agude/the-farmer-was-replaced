@@ -3,10 +3,6 @@
 This repository tracks automation scripts from The Farmer Was Replaced. The
 game runs a restricted Python-like language rather than CPython.
 
-`Save0/` and `Save0 - Copy/` are independent save trees. Changes are not copied
-between them automatically. Generated `save.json` and `__builtins__.py` files
-remain local and untracked.
-
 ## Static checks
 
 Install the managed Python interpreter and run all checks:
