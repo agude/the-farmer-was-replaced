@@ -1,4 +1,5 @@
 target-version = "py310"
+line-length = 100
 extend-exclude = ["**/__builtins__.py"]
 
 # The game injects these names without Python imports. Keeping the list explicit

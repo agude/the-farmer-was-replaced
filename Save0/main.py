@@ -26,7 +26,6 @@ def get_regular_positions():
     size = get_world_size()
 
     for x in range(size):
-
         if x % 2 == 0:
             for y in range(size):
                 if not is_pumpkin_tile(x, y):
@@ -48,10 +47,7 @@ def should_scan_forward(positions) -> bool:
     first_x, first_y = positions[0]
     last_x, last_y = positions[len(positions) - 1]
 
-    return (
-        distance_to(first_x, first_y)
-        <= distance_to(last_x, last_y)
-    )
+    return distance_to(first_x, first_y) <= distance_to(last_x, last_y)
 
 
 def farm_regular_tiles() -> None:
@@ -62,7 +58,6 @@ def farm_regular_tiles() -> None:
         return
 
     if should_scan_forward(positions):
-
         for i in range(len(positions)):
             x, y = positions[i]
 
@@ -70,7 +65,6 @@ def farm_regular_tiles() -> None:
             tend_regular_tile()
 
     else:
-
         for i in range(len(positions) - 1, -1, -1):
             x, y = positions[i]
 

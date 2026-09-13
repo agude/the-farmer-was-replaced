@@ -24,7 +24,7 @@ def pumpkin_end_y() -> int:
     return PUMPKIN_START_Y + PUMPKIN_SIZE - 1
 
 
-def is_pumpkin_tile(x = None, y = None) -> bool:
+def is_pumpkin_tile(x=None, y=None) -> bool:
     # Return whether a position lies inside the configured pumpkin patch.
     if x is None:
         x = get_pos_x()
@@ -96,28 +96,15 @@ def get_pumpkin_positions():
     #
     positions = []
 
-    for x in range(
-        PUMPKIN_START_X,
-        pumpkin_end_x() + 1
-    ):
-
+    for x in range(PUMPKIN_START_X, pumpkin_end_x() + 1):
         column = x - PUMPKIN_START_X
 
         if column % 2 == 0:
-
-            for y in range(
-                PUMPKIN_START_Y,
-                pumpkin_end_y() + 1
-            ):
+            for y in range(PUMPKIN_START_Y, pumpkin_end_y() + 1):
                 positions.append((x, y))
 
         else:
-
-            for y in range(
-                pumpkin_end_y(),
-                PUMPKIN_START_Y - 1,
-                -1
-            ):
+            for y in range(pumpkin_end_y(), PUMPKIN_START_Y - 1, -1):
                 positions.append((x, y))
 
     return positions
@@ -128,10 +115,7 @@ def should_scan_forward(positions) -> bool:
     first_x, first_y = positions[0]
     last_x, last_y = positions[len(positions) - 1]
 
-    return (
-        distance_to(first_x, first_y)
-        <= distance_to(last_x, last_y)
-    )
+    return distance_to(first_x, first_y) <= distance_to(last_x, last_y)
 
 
 def wait_for_positions(positions) -> None:
@@ -144,7 +128,6 @@ def wait_for_positions(positions) -> None:
     pending = positions
 
     while len(pending) > 0:
-
         #
         # Endgame optimization:
         #
@@ -165,7 +148,6 @@ def wait_for_positions(positions) -> None:
         still_pending = []
 
         if should_scan_forward(pending):
-
             for i in range(len(pending)):
                 x, y = pending[i]
 
@@ -175,7 +157,6 @@ def wait_for_positions(positions) -> None:
                     still_pending.append((x, y))
 
         else:
-
             for i in range(len(pending) - 1, -1, -1):
                 x, y = pending[i]
 

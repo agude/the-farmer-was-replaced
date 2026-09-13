@@ -18,11 +18,11 @@ just check
 
 Install the optional pre-commit hook with `just hooks-install`.
 
-The checks run a constrained Ruff ruleset, check formatting for the CPython
-tools under `scripts/`, reject syntax unsupported by the game interpreter,
-verify that game imports resolve within their save, and validate repository
-Agent Skills. The formatter never changes `Save*/` game code. Static checks do
-not replace testing in the game debugger or simulator.
+The checks run a constrained Ruff ruleset, check formatting for all Python
+files, reject syntax unsupported by the game interpreter, verify that game
+imports resolve within their save, and validate repository Agent Skills. Lint
+autofixes remain limited to the CPython tools under `scripts/`. Static checks
+do not replace testing in the game debugger or simulator.
 
 GitHub Actions runs the same `just lint` recipe. This repository has no
 continuous-deployment step because the active local game save cannot be chosen

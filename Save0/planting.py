@@ -38,10 +38,8 @@ PLANTING_MAP = {
     0: plant_tree_or_bush,
     1: plant_tree_or_bush,
     2: plant_tree_or_bush,
-
     3: plant_grass,
     4: plant_grass,
-
     5: plant_carrots,
     6: plant_carrots,
     7: plant_carrots,

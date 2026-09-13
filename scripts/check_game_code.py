@@ -101,10 +101,7 @@ def find_save_directory(path: Path) -> Path | None:
 
 def module_exists(save_directory: Path, module_name: str) -> bool:
     module_path = save_directory.joinpath(*module_name.split("."))
-    return (
-        module_path.with_suffix(".py").is_file()
-        or (module_path / "__init__.py").is_file()
-    )
+    return module_path.with_suffix(".py").is_file() or (module_path / "__init__.py").is_file()
 
 
 def import_findings(path: Path, tree: ast.AST) -> list[Finding]:

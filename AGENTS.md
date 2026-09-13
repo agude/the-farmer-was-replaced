@@ -11,14 +11,15 @@ generated save-state files unless explicitly requested.
 
 Run `just check` before committing. It is the complete local equivalent of CI.
 
-Ruff is limited to defect-oriented rules. Do not run Ruff formatting or
-autofixes on `Save*/`, and do not enable `SIM`, `RUF`, `UP`, or `C4`: those
-rules can recommend syntax that the game interpreter does not support. The
-`format` recipe changes only the CPython tooling under `scripts/`. Update the
-explicit `builtins` list in `ruff.toml` when game code starts using another
-injected API name.
+Ruff formats all Python files and applies defect-oriented lint rules. Do not
+run lint autofixes on `Save*/`, and do not enable `SIM`, `RUF`, `UP`, or `C4`:
+those rules can recommend syntax that the game interpreter does not support.
+The `format` recipe applies lint autofixes only to the CPython tooling under
+`scripts/`. Update the explicit `builtins` list in `ruff.toml` when game code
+starts using another injected API name.
 
-This repository is a script collection. It intentionally has no package,
-type-check, test, coverage, build, release, or deployment jobs. Behavioral
-validation happens in the game debugger or simulator. Python 3.12 is pinned
-only to run repository tooling; it is not the game runtime.
+This repository is a script collection, not a Python package. CI runs static
+linting and repository-specific validation, but no type checker, runtime test
+suite, coverage, build, release, or deployment jobs. Game behavior must be
+validated in the game debugger or simulator. Python 3.12.3 is pinned only to
+run repository tooling; the game uses its own interpreter.

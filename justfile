@@ -12,12 +12,12 @@ sync:
 # Run every read-only static check used by CI.
 lint:
     uvx ruff@{{ruff_version}} check .
-    uvx ruff@{{ruff_version}} format --check scripts
+    uvx ruff@{{ruff_version}} format --check .
     uv run scripts/check_game_code.py
     uv run scripts/check_skills.py
 
 format:
-    uvx ruff@{{ruff_version}} format scripts
+    uvx ruff@{{ruff_version}} format .
     uvx ruff@{{ruff_version}} check --fix scripts
 
 check: lint
