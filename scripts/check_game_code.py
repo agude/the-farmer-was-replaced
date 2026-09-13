@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import argparse
 import ast
+import json
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 
 UNSUPPORTED_NODES: dict[type[ast.AST], str] = {
@@ -56,6 +58,12 @@ def parse_arguments() -> argparse.Namespace:
         nargs="*",
         type=Path,
         help="Files or save directories to check; defaults to tracked Save* Python files.",
+    )
+    parser.add_argument(
+        "--api-manifest",
+        type=Path,
+        default=Path("game-api.json"),
+        help="Committed game API manifest (default: game-api.json).",
     )
     return parser.parse_args()
 
@@ -182,7 +190,77 @@ def dialect_findings(path: Path, tree: ast.AST) -> list[Finding]:
     return findings
 
 
-def check_file(path: Path) -> list[Finding]:
+def locally_defined_callables(tree: ast.AST) -> set[str]:
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            names.add(node.name)
+        elif isinstance(node, (ast.Import, ast.ImportFrom)):
+            names.update(alias.asname or alias.name.split(".")[0] for alias in node.names)
+    return names
+
+
+def accepts_positional_count(signatures: list[dict[str, int | None]], count: int) -> bool:
+    return any(
+        count >= signature["min_positional"]
+        and (signature["max_positional"] is None or count <= signature["max_positional"])
+        for signature in signatures
+    )
+
+
+def api_findings(path: Path, tree: ast.AST, manifest: dict[str, Any]) -> list[Finding]:
+    findings: list[Finding] = []
+    functions = manifest["functions"]
+    enums = manifest["enums"]
+    local_callables = locally_defined_callables(tree)
+
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id in functions
+            and node.func.id not in local_callables
+            and not any(isinstance(argument, ast.Starred) for argument in node.args)
+            and not accepts_positional_count(functions[node.func.id], len(node.args))
+        ):
+            findings.append(
+                Finding(
+                    path,
+                    node.lineno,
+                    node.col_offset + 1,
+                    f"{node.func.id}() does not accept {len(node.args)} positional argument(s)",
+                )
+            )
+        elif (
+            isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Name)
+            and node.value.id in enums
+            and node.attr not in enums[node.value.id]
+        ):
+            findings.append(
+                Finding(
+                    path,
+                    node.lineno,
+                    node.col_offset + 1,
+                    f"{node.value.id}.{node.attr} is not in the installed game API",
+                )
+            )
+
+    return findings
+
+
+def load_manifest(path: Path) -> dict[str, Any]:
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    if manifest.get("schema_version") != 1:
+        raise ValueError("unsupported or missing schema_version")
+    if not isinstance(manifest.get("functions"), dict) or not isinstance(
+        manifest.get("enums"), dict
+    ):
+        raise ValueError("functions and enums must be objects")
+    return manifest
+
+
+def check_file(path: Path, manifest: dict[str, Any]) -> list[Finding]:
     try:
         source = path.read_text(encoding="utf-8")
     except OSError as error:
@@ -200,12 +278,27 @@ def check_file(path: Path) -> list[Finding]:
             )
         ]
 
-    return dialect_findings(path, tree) + import_findings(path, tree)
+    return (
+        dialect_findings(path, tree)
+        + import_findings(path, tree)
+        + api_findings(path, tree, manifest)
+    )
 
 
 def main() -> int:
     arguments = parse_arguments()
     root = Path.cwd().resolve()
+
+    try:
+        manifest_path = (
+            arguments.api_manifest
+            if arguments.api_manifest.is_absolute()
+            else root / arguments.api_manifest
+        )
+        manifest = load_manifest(manifest_path)
+    except (OSError, json.JSONDecodeError, TypeError, ValueError) as error:
+        print(f"cannot load game API manifest: {error}", file=sys.stderr)
+        return 2
 
     try:
         files = expand_paths(arguments.paths, root)
@@ -217,7 +310,7 @@ def main() -> int:
         print("no game Python files found", file=sys.stderr)
         return 2
 
-    findings = sorted(finding for path in files for finding in check_file(path))
+    findings = sorted(finding for path in files for finding in check_file(path, manifest))
     if findings:
         for finding in findings:
             print(finding.render(root))
