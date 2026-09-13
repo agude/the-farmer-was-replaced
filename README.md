@@ -23,3 +23,20 @@ do not replace testing in the game debugger or simulator.
 GitHub Actions runs the same `just lint` recipe. This repository has no
 continuous-deployment step because the active local game save cannot be chosen
 or updated safely by hosted CI.
+
+## Game API metadata
+
+The game-generated `Save0/__builtins__.py` is an ignored editor stub and is not
+run as Python. `game-api.json` records its public functions, positional call
+limits, enum members, and injected globals so hosted CI can validate scripts
+without access to the local save metadata.
+
+After a game update regenerates the stub, refresh the committed metadata and
+Ruff globals, then run all checks:
+
+```sh
+just api-sync
+just check
+```
+
+Do not edit the manifest or the marked Ruff globals block by hand.

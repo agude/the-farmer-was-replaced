@@ -11,10 +11,10 @@ that code works in the game's custom interpreter.
 
 ## Workflow
 
-1. Resolve the target save from the requested path or files. Treat `Save0` and
-   `Save0 - Copy` as independent; compare before copying between them. If a
-   game-side test depends on the active slot and the target is ambiguous, have
-   the user confirm it.
+1. Resolve the target save from the requested path or files. Treat separate
+   `Save*` directories as independent; compare before copying between them. If
+   a game-side test depends on the active slot and the target is ambiguous,
+   have the user confirm it.
 2. Read the target modules and only the relevant definitions or docstrings in
    that save's generated `__builtins__.py`. Never commit `__builtins__.py`.
 3. Preserve the existing module and import structure unless the task requires
@@ -24,6 +24,13 @@ that code works in the game's custom interpreter.
    save-state edits or destructive game-side experiments; tracked code edits
    rely on Git for recovery.
 5. Validate statically, then state what still requires an in-game check.
+
+The game generates `__builtins__.py` as an approximate editor stub for its
+current API. It is local input, not repository source: keep it ignored and do
+not format, lint, or edit it. In this repository, `game-api.json` is the
+committed, portable API manifest used by CI. After the game regenerates the
+stub, run `just api-sync`, review changes to the manifest and the generated
+Ruff globals block, then run `just check`.
 
 For disputed or version-sensitive behavior, use this source order:
 
@@ -81,8 +88,10 @@ inventory, globals, seed, and speed inputs are known.
 
 ## Validation
 
-1. Inspect the diff and run whitespace and syntax checks appropriate to the
-   changed files. Treat CPython results as supplementary.
+1. Inspect the diff and run `just check`. It verifies formatting, compatible
+   syntax, local imports, installed API call arity and enum members, the API
+   manifest, Ruff globals, and repository skills. Treat CPython results as
+   supplementary.
 2. For behavior, use the game debugger, `quick_print()`, slower execution, or
    a reduced test world. `set_world_size()` clears the farm and resets the
    drone, so use it only in an intentional test.

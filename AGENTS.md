@@ -15,8 +15,10 @@ Ruff formats all Python files and applies defect-oriented lint rules. Do not
 run lint autofixes on `Save*/`, and do not enable `SIM`, `RUF`, `UP`, or `C4`:
 those rules can recommend syntax that the game interpreter does not support.
 The `format` recipe applies lint autofixes only to the CPython tooling under
-`scripts/`. Update the explicit `builtins` list in `ruff.toml` when game code
-starts using another injected API name.
+`scripts/`. The game-generated `Save0/__builtins__.py` remains ignored and
+untouched. After the game regenerates it, run `just api-sync` to update
+`game-api.json` and the marked Ruff globals block; do not edit either generated
+section by hand.
 
 This repository is a script collection, not a Python package. CI runs static
 linting and repository-specific validation, but no type checker, runtime test
