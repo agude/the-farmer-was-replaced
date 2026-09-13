@@ -11,6 +11,7 @@ sync:
 
 # Run every read-only static check used by CI.
 lint:
+    uv run scripts/sync_game_api.py --check
     uvx ruff@{{ruff_version}} check .
     uvx ruff@{{ruff_version}} format --check .
     uv run scripts/check_game_code.py
@@ -19,6 +20,10 @@ lint:
 format:
     uvx ruff@{{ruff_version}} format .
     uvx ruff@{{ruff_version}} check --fix scripts
+
+# Refresh committed API metadata after the game regenerates its editor stub.
+api-sync:
+    uv run scripts/sync_game_api.py
 
 check: lint
 

@@ -1,5 +1,6 @@
 # Game-generated state
 *.json
+!game-api.json
 __builtins__.py
 __pycache__/
 *.py[cod]
