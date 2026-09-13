@@ -3,3 +3,6 @@
 __builtins__.py
 __pycache__/
 *.py[cod]
+
+# Temporary research and agent notes
+tmp/
