@@ -29,7 +29,7 @@ api-sync:
 cactus-test:
     uv run scripts/test_cactus_sort.py
 
-check: lint
+check: lint cactus-test
 
 hooks-install:
     ln -sf ../../bin/pre-commit.sh .git/hooks/pre-commit

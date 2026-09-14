@@ -120,36 +120,86 @@ def wait_for_cactuses(positions) -> None:
         pending = still_pending
 
 
+def sort_cactus_row(y: int) -> None:
+    # Sort one row west to east with an early-terminating cocktail sort.
+    left_x = CACTUS_START_X
+    right_x = cactus_end_x()
+
+    while left_x < right_x:
+        swapped = False
+
+        for x in range(left_x, right_x):
+            move_to(x, y)
+
+            if measure() > measure(East):
+                swap(East)
+                swapped = True
+
+        right_x -= 1
+
+        if not swapped:
+            return
+
+        swapped = False
+
+        for x in range(right_x, left_x, -1):
+            move_to(x, y)
+
+            if measure() < measure(West):
+                swap(West)
+                swapped = True
+
+        left_x += 1
+
+        if not swapped:
+            return
+
+
 def sort_cactus_rows() -> None:
-    # Sort each row from west to east using adjacent swaps.
+    # Sort every row west to east with adjacent swaps.
     for y in range(CACTUS_START_Y, cactus_end_y() + 1):
-        for _ in range(CACTUS_SIZE - 1):
-            for offset in range(CACTUS_SIZE - 1):
-                x = CACTUS_START_X + offset
+        sort_cactus_row(y)
 
-                move_to(x, y)
 
-                current_size = measure()
-                east_size = measure(East)
+def sort_cactus_column(x: int) -> None:
+    # Sort one column south to north with an early-terminating cocktail sort.
+    bottom_y = CACTUS_START_Y
+    top_y = cactus_end_y()
 
-                if current_size > east_size:
-                    swap(East)
+    while bottom_y < top_y:
+        swapped = False
+
+        for y in range(bottom_y, top_y):
+            move_to(x, y)
+
+            if measure() > measure(North):
+                swap(North)
+                swapped = True
+
+        top_y -= 1
+
+        if not swapped:
+            return
+
+        swapped = False
+
+        for y in range(top_y, bottom_y, -1):
+            move_to(x, y)
+
+            if measure() < measure(South):
+                swap(South)
+                swapped = True
+
+        bottom_y += 1
+
+        if not swapped:
+            return
 
 
 def sort_cactus_columns() -> None:
-    # Sort each column from south to north using adjacent swaps.
+    # Sort every column south to north with adjacent swaps.
     for x in range(CACTUS_START_X, cactus_end_x() + 1):
-        for _ in range(CACTUS_SIZE - 1):
-            for offset in range(CACTUS_SIZE - 1):
-                y = CACTUS_START_Y + offset
-
-                move_to(x, y)
-
-                current_size = measure()
-                north_size = measure(North)
-
-                if current_size > north_size:
-                    swap(North)
+        sort_cactus_column(x)
 
 
 def sort_cactuses() -> None:

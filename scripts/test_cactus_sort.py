@@ -55,6 +55,24 @@ class ActionCounts:
         )
 
 
+@dataclass(frozen=True)
+class ActionLimits:
+    max_moves: int
+    max_measures: int
+    max_api_actions: int
+    max_estimated_ticks: int
+
+
+PERFORMANCE_LIMITS = {
+    "already sorted": ActionLimits(900, 900, 3100, 180_000),
+    "reverse sorted": ActionLimits(2700, 5200, 17_500, 950_000),
+    "worst-case diagonal": ActionLimits(3400, 7000, 23_500, 1_300_000),
+    "checkerboard": ActionLimits(2000, 3400, 11_000, 500_000),
+}
+
+RANDOM_ACTION_LIMITS = ActionLimits(3000, 5600, 18_000, 900_000)
+
+
 class GridSimulator:
     def __init__(self, values: list[list[int]], world_size: int) -> None:
         self.values = [row[:] for row in values]
@@ -149,7 +167,9 @@ def install_simulator(simulator: GridSimulator) -> None:
     cactus.measure = simulator.measure
     cactus.swap = simulator.swap
     cactus.East = EAST
+    cactus.West = WEST
     cactus.North = NORTH
+    cactus.South = SOUTH
 
 
 def flatten(values: list[list[int]]) -> list[int]:
@@ -256,6 +276,20 @@ def random_grid(generator: random.Random) -> list[list[int]]:
     return grid
 
 
+def assert_action_limits(name: str, actions: ActionCounts) -> None:
+    limits = PERFORMANCE_LIMITS.get(name, RANDOM_ACTION_LIMITS)
+    measurements = [
+        ("moves", actions.move_actions, limits.max_moves),
+        ("measurements", actions.measure_actions, limits.max_measures),
+        ("API actions", actions.api_actions, limits.max_api_actions),
+        ("estimated ticks", actions.estimated_ticks, limits.max_estimated_ticks),
+    ]
+
+    for label, actual, maximum in measurements:
+        if actual > maximum:
+            raise AssertionError(f"{name}: {label}={actual} exceeds limit {maximum}")
+
+
 def run_case(name: str, values: list[list[int]]) -> ActionCounts:
     original_values = flatten(values)
     world_size = max(cactus.cactus_end_x(), cactus.cactus_end_y()) + 1
@@ -271,6 +305,7 @@ def run_case(name: str, values: list[list[int]]) -> ActionCounts:
         raise AssertionError(f"{name}: cactus sizes changed")
 
     actions = simulator.actions
+    assert_action_limits(name, actions)
     print(
         f"{name}: swaps={actions.swap_actions}, "
         f"moves={actions.move_actions}, measures={actions.measure_actions}, "

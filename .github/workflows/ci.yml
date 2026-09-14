@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  lint:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -18,5 +18,5 @@ jobs:
       - uses: extractions/setup-just@v4
       - name: Install tools
         run: just sync
-      - name: Run static checks
-        run: just lint
+      - name: Run repository checks
+        run: just check
