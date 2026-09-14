@@ -25,6 +25,10 @@ format:
 api-sync:
     uv run scripts/sync_game_api.py
 
+# Run the CPython cactus-sort harness against simulated game operations.
+cactus-test:
+    uv run scripts/test_cactus_sort.py
+
 check: lint
 
 hooks-install:

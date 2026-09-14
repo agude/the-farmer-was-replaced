@@ -1,17 +1,12 @@
+from farm_config import (
+    PUMPKIN_SIZE,
+    PUMPKIN_START_X,
+    PUMPKIN_START_Y,
+    PUMPKIN_WATER_THRESHOLD,
+)
 from navigation import distance_to, move_to
 from planting import ensure_soil
 from watering import water_if_dry
-
-
-#
-# Change ONLY these to resize / relocate the patch.
-#
-PUMPKIN_START_X = 15
-PUMPKIN_START_Y = 0
-PUMPKIN_SIZE = 17
-
-
-PUMPKIN_WATER_THRESHOLD = 0.2
 
 
 def pumpkin_end_x() -> int:

@@ -1,26 +1,25 @@
 from navigation import move_to, distance_to
+from cactus import farm_cactus_patch, is_cactus_tile
+from farm_config import REGULAR_WATER_THRESHOLD
 from planting import plant_current_tile
 from pumpkins import farm_pumpkin_patch, is_pumpkin_tile
 from watering import water_if_dry
 
 
-WATER_THRESHOLD = 0.15
-
-
 def tend_regular_tile() -> None:
-    # Harvest, plant, and water the current non-pumpkin tile.
+    # Harvest, plant, and water the current non-special tile.
     if can_harvest():
         harvest()
 
     plant_current_tile()
-    water_if_dry(WATER_THRESHOLD)
+    water_if_dry(REGULAR_WATER_THRESHOLD)
 
 
 def get_regular_positions():
-    # Return all non-pumpkin positions in snake-scan order.
+    # Return all non-special positions in snake-scan order.
     #
     # Build a snake over the entire world, but leave
-    # pumpkin tiles out of the list.
+    # cactus and pumpkin tiles out of the list.
     #
     positions = []
     size = get_world_size()
@@ -28,12 +27,12 @@ def get_regular_positions():
     for x in range(size):
         if x % 2 == 0:
             for y in range(size):
-                if not is_pumpkin_tile(x, y):
+                if not is_cactus_tile(x, y) and not is_pumpkin_tile(x, y):
                     positions.append((x, y))
 
         else:
             for y in range(size - 1, -1, -1):
-                if not is_pumpkin_tile(x, y):
+                if not is_cactus_tile(x, y) and not is_pumpkin_tile(x, y):
                     positions.append((x, y))
 
     return positions
@@ -78,3 +77,4 @@ move_to(0, 0)
 while True:
     farm_regular_tiles()
     farm_pumpkin_patch()
+    farm_cactus_patch()
