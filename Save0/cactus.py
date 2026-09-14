@@ -19,19 +19,6 @@ def cactus_end_y() -> int:
     return CACTUS_START_Y + CACTUS_SIZE - 1
 
 
-def is_cactus_tile(x=None, y=None) -> bool:
-    # Return whether a position lies inside the configured cactus patch.
-    if x == None:
-        x = get_pos_x()
-
-    if y == None:
-        y = get_pos_y()
-
-    return (
-        x >= CACTUS_START_X and x <= cactus_end_x() and y >= CACTUS_START_Y and y <= cactus_end_y()
-    )
-
-
 def plant_cactus() -> None:
     # Ensure soil and plant a cactus on the current tile.
     ensure_soil()

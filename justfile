@@ -29,7 +29,15 @@ api-sync:
 cactus-test:
     uv run scripts/test_cactus_sort.py
 
-check: lint cactus-test
+# Run the CPython layout classifier harness.
+farm-layout-test:
+    uv run scripts/test_farm_layout.py
+
+# Run the regular farming traversal integration harness.
+regular-farming-test:
+    uv run scripts/test_regular_farming.py
+
+check: lint cactus-test farm-layout-test regular-farming-test
 
 hooks-install:
     ln -sf ../../bin/pre-commit.sh .git/hooks/pre-commit

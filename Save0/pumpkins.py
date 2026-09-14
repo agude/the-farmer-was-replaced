@@ -19,22 +19,6 @@ def pumpkin_end_y() -> int:
     return PUMPKIN_START_Y + PUMPKIN_SIZE - 1
 
 
-def is_pumpkin_tile(x=None, y=None) -> bool:
-    # Return whether a position lies inside the configured pumpkin patch.
-    if x == None:
-        x = get_pos_x()
-
-    if y == None:
-        y = get_pos_y()
-
-    return (
-        x >= PUMPKIN_START_X
-        and x <= pumpkin_end_x()
-        and y >= PUMPKIN_START_Y
-        and y <= pumpkin_end_y()
-    )
-
-
 def plant_pumpkin() -> None:
     # Ensure soil and plant a pumpkin on the current tile.
     ensure_soil()

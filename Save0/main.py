@@ -1,80 +1,30 @@
-from navigation import move_to, distance_to
-from cactus import farm_cactus_patch, is_cactus_tile
-from farm_config import REGULAR_WATER_THRESHOLD
-from planting import plant_current_tile
-from pumpkins import farm_pumpkin_patch, is_pumpkin_tile
-from watering import water_if_dry
+from navigation import move_to
+from cactus import farm_cactus_patch
+from farm_config import (
+    ENABLE_CACTUS_PATCH,
+    ENABLE_CARROT_FILL,
+    ENABLE_GRASS_STRIP,
+    ENABLE_PUMPKIN_PATCH,
+    ENABLE_TREE_BUSH_STRIP,
+)
+from pumpkins import farm_pumpkin_patch
+from regular_farming import farm_regular_tiles
 
 
-def tend_regular_tile() -> None:
-    # Harvest, plant, and water the current non-special tile.
-    if can_harvest():
-        harvest()
+if (
+    ENABLE_CACTUS_PATCH
+    or ENABLE_PUMPKIN_PATCH
+    or ENABLE_TREE_BUSH_STRIP
+    or ENABLE_GRASS_STRIP
+    or ENABLE_CARROT_FILL
+):
+    move_to(0, 0)
 
-    plant_current_tile()
-    water_if_dry(REGULAR_WATER_THRESHOLD)
+    while True:
+        farm_regular_tiles()
 
+        if ENABLE_PUMPKIN_PATCH:
+            farm_pumpkin_patch()
 
-def get_regular_positions():
-    # Return all non-special positions in snake-scan order.
-    #
-    # Build a snake over the entire world, but leave
-    # cactus and pumpkin tiles out of the list.
-    #
-    positions = []
-    size = get_world_size()
-
-    for x in range(size):
-        if x % 2 == 0:
-            for y in range(size):
-                if not is_cactus_tile(x, y) and not is_pumpkin_tile(x, y):
-                    positions.append((x, y))
-
-        else:
-            for y in range(size - 1, -1, -1):
-                if not is_cactus_tile(x, y) and not is_pumpkin_tile(x, y):
-                    positions.append((x, y))
-
-    return positions
-
-
-def should_scan_forward(positions) -> bool:
-    # Return whether the first position is nearer than the last.
-    if len(positions) == 0:
-        return True
-
-    first_x, first_y = positions[0]
-    last_x, last_y = positions[len(positions) - 1]
-
-    return distance_to(first_x, first_y) <= distance_to(last_x, last_y)
-
-
-def farm_regular_tiles() -> None:
-    # Visit and tend every regular tile in the shorter scan direction.
-    positions = get_regular_positions()
-
-    if len(positions) == 0:
-        return
-
-    if should_scan_forward(positions):
-        for i in range(len(positions)):
-            x, y = positions[i]
-
-            move_to(x, y)
-            tend_regular_tile()
-
-    else:
-        for i in range(len(positions) - 1, -1, -1):
-            x, y = positions[i]
-
-            move_to(x, y)
-            tend_regular_tile()
-
-
-move_to(0, 0)
-
-
-while True:
-    farm_regular_tiles()
-    farm_pumpkin_patch()
-    farm_cactus_patch()
+        if ENABLE_CACTUS_PATCH:
+            farm_cactus_patch()
