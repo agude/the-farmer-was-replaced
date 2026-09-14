@@ -37,7 +37,11 @@ farm-layout-test:
 regular-farming-test:
     uv run scripts/test_regular_farming.py
 
-check: lint cactus-test farm-layout-test regular-farming-test
+# Run the CPython fertilizer-policy harness.
+fertilizing-test:
+    uv run scripts/test_fertilizing.py
+
+check: lint cactus-test farm-layout-test regular-farming-test fertilizing-test
 
 hooks-install:
     ln -sf ../../bin/pre-commit.sh .git/hooks/pre-commit

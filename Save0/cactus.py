@@ -3,7 +3,9 @@ from farm_config import (
     CACTUS_START_X,
     CACTUS_START_Y,
     CACTUS_WATER_THRESHOLD,
+    FERTILIZE_CACTUS_HARVEST,
 )
+from fertilizing import fertilize_before_harvest
 from navigation import distance_to, move_to
 from planting import ensure_soil
 from watering import water_if_dry
@@ -205,4 +207,7 @@ def farm_cactus_patch() -> None:
     move_to(CACTUS_START_X, CACTUS_START_Y)
 
     if can_harvest():
+        if FERTILIZE_CACTUS_HARVEST:
+            fertilize_before_harvest()
+
         harvest()

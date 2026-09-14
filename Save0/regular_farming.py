@@ -1,4 +1,5 @@
-from farm_config import REGULAR_WATER_THRESHOLD
+from farm_config import FERTILIZE_REGULAR_HARVESTS, REGULAR_WATER_THRESHOLD
+from fertilizing import fertilize_before_harvest
 from farm_layout import is_regular_target, target_entity_at
 from navigation import distance_to, move_to
 from planting import plant_target_entity
@@ -8,6 +9,9 @@ from watering import water_if_dry
 def tend_regular_tile(target) -> None:
     # Harvest, plant, and water the current regular target tile.
     if can_harvest():
+        if FERTILIZE_REGULAR_HARVESTS:
+            fertilize_before_harvest()
+
         harvest()
 
     plant_target_entity(target)

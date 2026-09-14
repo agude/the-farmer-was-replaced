@@ -1,9 +1,11 @@
 from farm_config import (
+    FERTILIZE_PUMPKIN_HARVEST,
     PUMPKIN_SIZE,
     PUMPKIN_START_X,
     PUMPKIN_START_Y,
     PUMPKIN_WATER_THRESHOLD,
 )
+from fertilizing import fertilize_before_harvest
 from navigation import distance_to, move_to
 from planting import ensure_soil
 from watering import water_if_dry
@@ -169,4 +171,7 @@ def farm_pumpkin_patch() -> None:
     # We're standing on the final one, so harvest
     # immediately. No redundant verification pass.
     #
+    if FERTILIZE_PUMPKIN_HARVEST:
+        fertilize_before_harvest()
+
     harvest()
