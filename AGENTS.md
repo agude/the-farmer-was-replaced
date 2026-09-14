@@ -18,7 +18,9 @@ The `format` recipe applies lint autofixes only to the CPython tooling under
 `scripts/`. The game-generated `Save0/__builtins__.py` remains ignored and
 untouched. After the game regenerates it, run `just api-sync` to update
 `game-api.json` and the marked Ruff globals block; do not edit either generated
-section by hand.
+section by hand. Ruff ignores `E711` for game scripts because the game
+requires `== None` and `!= None`; `scripts/check_game_code.py` rejects `is
+None` and `is not None` in `Save*/`.
 
 This repository is a script collection, not a Python package. CI runs static
 linting and repository-specific validation, but no type checker, runtime test

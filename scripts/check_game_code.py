@@ -190,6 +190,33 @@ def dialect_findings(path: Path, tree: ast.AST) -> list[Finding]:
     return findings
 
 
+def none_comparison_findings(path: Path, tree: ast.AST) -> list[Finding]:
+    findings: list[Finding] = []
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Compare):
+            continue
+
+        for operator, comparator in zip(node.ops, node.comparators, strict=True):
+            if not isinstance(operator, (ast.Is, ast.IsNot)):
+                continue
+            if not (isinstance(comparator, ast.Constant) and comparator.value is None) and not (
+                isinstance(node.left, ast.Constant) and node.left.value is None
+            ):
+                continue
+
+            findings.append(
+                Finding(
+                    path,
+                    node.lineno,
+                    node.col_offset + 1,
+                    "game code must compare None with == or !=, not is or is not",
+                )
+            )
+
+    return findings
+
+
 def locally_defined_callables(tree: ast.AST) -> set[str]:
     names: set[str] = set()
     for node in ast.walk(tree):
@@ -280,6 +307,7 @@ def check_file(path: Path, manifest: dict[str, Any]) -> list[Finding]:
 
     return (
         dialect_findings(path, tree)
+        + none_comparison_findings(path, tree)
         + import_findings(path, tree)
         + api_findings(path, tree, manifest)
     )

@@ -92,3 +92,8 @@ select = [
     "B",   # Likely bugs.
     "RET", # Return-value defects.
 ]
+
+[lint.per-file-ignores]
+"Save*/**.py" = [
+    "E711",  # The game runtime requires equality comparisons with None.
+]

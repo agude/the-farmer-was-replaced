@@ -57,6 +57,16 @@ PLANTING_MAP = {
     19: plant_carrots,
     20: plant_carrots,
     21: plant_carrots,
+    22: plant_carrots,
+    23: plant_carrots,
+    24: plant_carrots,
+    25: plant_carrots,
+    26: plant_carrots,
+    27: plant_carrots,
+    28: plant_carrots,
+    29: plant_carrots,
+    30: plant_carrots,
+    31: plant_carrots,
 }
 
 

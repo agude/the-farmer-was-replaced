@@ -6,12 +6,12 @@ from watering import water_if_dry
 #
 # Change ONLY these to resize / relocate the patch.
 #
-PUMPKIN_START_X = 0
+PUMPKIN_START_X = 15
 PUMPKIN_START_Y = 0
-PUMPKIN_SIZE = 16
+PUMPKIN_SIZE = 17
 
 
-PUMPKIN_WATER_THRESHOLD = 0.15
+PUMPKIN_WATER_THRESHOLD = 0.2
 
 
 def pumpkin_end_x() -> int:
@@ -26,10 +26,10 @@ def pumpkin_end_y() -> int:
 
 def is_pumpkin_tile(x=None, y=None) -> bool:
     # Return whether a position lies inside the configured pumpkin patch.
-    if x is None:
+    if x == None:
         x = get_pos_x()
 
-    if y is None:
+    if y == None:
         y = get_pos_y()
 
     return (
@@ -71,7 +71,7 @@ def pumpkin_is_ready() -> bool:
     #
     # Empty tile.
     #
-    if entity is None:
+    if entity == None:
         plant_pumpkin()
         water_if_dry(PUMPKIN_WATER_THRESHOLD)
         return False

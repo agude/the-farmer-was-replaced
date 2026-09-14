@@ -56,7 +56,8 @@ do not answer it.
   `set_world_size()`; older examples often use superseded names.
 - `spawn_drone(function, *args)` is supported by current builds. Do not copy
   older closure workarounds without checking the installed signature.
-- Compare missing values with `is None` or `is not None`, not equality.
+- Compare missing values with `== None` or `!= None`, not `is None` or
+  `is not None`; this is required by the game interpreter.
 - Use `quick_print()` for diagnostics. `print()` adds visible and timing
   overhead.
 
