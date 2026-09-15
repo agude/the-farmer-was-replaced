@@ -37,6 +37,10 @@ farm-layout-test:
 sunflower-test:
     uv run scripts/test_sunflowers.py
 
+# Run the CPython maze solver harness.
+maze-test:
+    uv run scripts/test_maze.py
+
 # Run the regular farming traversal integration harness.
 regular-farming-test:
     uv run scripts/test_regular_farming.py
@@ -45,7 +49,7 @@ regular-farming-test:
 fertilizing-test:
     uv run scripts/test_fertilizing.py
 
-check: lint cactus-test farm-layout-test sunflower-test regular-farming-test fertilizing-test
+check: lint cactus-test farm-layout-test sunflower-test maze-test regular-farming-test fertilizing-test
 
 hooks-install:
     ln -sf ../../bin/pre-commit.sh .git/hooks/pre-commit
