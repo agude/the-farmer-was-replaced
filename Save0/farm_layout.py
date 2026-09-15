@@ -6,10 +6,15 @@ from farm_config import (
     ENABLE_CARROT_FILL,
     ENABLE_GRASS_STRIP,
     ENABLE_PUMPKIN_PATCH,
+    ENABLE_SUNFLOWER_PATCH,
     ENABLE_TREE_BUSH_STRIP,
     PUMPKIN_SIZE,
     PUMPKIN_START_X,
     PUMPKIN_START_Y,
+    SUNFLOWER_HEIGHT,
+    SUNFLOWER_START_X,
+    SUNFLOWER_START_Y,
+    SUNFLOWER_WIDTH,
 )
 
 
@@ -38,6 +43,16 @@ def is_pumpkin_region(x: int, y: int) -> bool:
     )
 
 
+def is_sunflower_region(x: int, y: int) -> bool:
+    # Return whether coordinates lie inside the sunflower patch geometry.
+    return (
+        x >= SUNFLOWER_START_X
+        and x < SUNFLOWER_START_X + SUNFLOWER_WIDTH
+        and y >= SUNFLOWER_START_Y
+        and y < SUNFLOWER_START_Y + SUNFLOWER_HEIGHT
+    )
+
+
 def target_entity_at(x: int, y: int):
     # Return the highest-priority enabled target for coordinates.
     if ENABLE_CACTUS_PATCH and is_cactus_region(x, y):
@@ -45,6 +60,9 @@ def target_entity_at(x: int, y: int):
 
     if ENABLE_PUMPKIN_PATCH and is_pumpkin_region(x, y):
         return Entities.Pumpkin
+
+    if ENABLE_SUNFLOWER_PATCH and is_sunflower_region(x, y):
+        return Entities.Sunflower
 
     if ENABLE_TREE_BUSH_STRIP and x <= TREE_BUSH_END_X:
         if (x + y) % 2:
@@ -63,4 +81,9 @@ def target_entity_at(x: int, y: int):
 
 def is_regular_target(target) -> bool:
     # Return whether a target belongs to the regular farming loop.
-    return target != None and target != Entities.Cactus and target != Entities.Pumpkin
+    return (
+        target != None
+        and target != Entities.Cactus
+        and target != Entities.Pumpkin
+        and target != Entities.Sunflower
+    )

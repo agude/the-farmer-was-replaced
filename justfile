@@ -33,6 +33,10 @@ cactus-test:
 farm-layout-test:
     uv run scripts/test_farm_layout.py
 
+# Run the CPython sunflower lifecycle harness.
+sunflower-test:
+    uv run scripts/test_sunflowers.py
+
 # Run the regular farming traversal integration harness.
 regular-farming-test:
     uv run scripts/test_regular_farming.py
@@ -41,7 +45,7 @@ regular-farming-test:
 fertilizing-test:
     uv run scripts/test_fertilizing.py
 
-check: lint cactus-test farm-layout-test regular-farming-test fertilizing-test
+check: lint cactus-test farm-layout-test sunflower-test regular-farming-test fertilizing-test
 
 hooks-install:
     ln -sf ../../bin/pre-commit.sh .git/hooks/pre-commit
