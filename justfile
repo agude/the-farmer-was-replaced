@@ -41,6 +41,10 @@ sunflower-test:
 maze-test:
     uv run scripts/test_maze.py
 
+# Run the CPython dinosaur-route and policy harness.
+dinosaur-test:
+    uv run scripts/test_dinosaurs.py
+
 # Run the regular farming traversal integration harness.
 regular-farming-test:
     uv run scripts/test_regular_farming.py
@@ -49,7 +53,7 @@ regular-farming-test:
 fertilizing-test:
     uv run scripts/test_fertilizing.py
 
-check: lint cactus-test farm-layout-test sunflower-test maze-test regular-farming-test fertilizing-test
+check: lint cactus-test farm-layout-test sunflower-test maze-test dinosaur-test regular-farming-test fertilizing-test
 
 hooks-install:
     ln -sf ../../bin/pre-commit.sh .git/hooks/pre-commit

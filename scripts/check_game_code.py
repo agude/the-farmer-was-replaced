@@ -30,6 +30,7 @@ UNSUPPORTED_NODES: dict[type[ast.AST], str] = {
     ast.ListComp: "list comprehensions",
     ast.SetComp: "set comprehensions",
     ast.Starred: "starred expressions",
+    ast.Try: "exception handling",
 }
 
 
