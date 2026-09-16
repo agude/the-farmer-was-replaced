@@ -74,8 +74,10 @@ def assert_traversal(expected_positions, expected_targets, name: str) -> None:
 def test_forward_traversal() -> None:
     positions = regular_farming.get_regular_positions()
 
-    if len(positions) != 494:
-        raise AssertionError(f"expected 494 regular positions, got {len(positions)}")
+    if len(positions) != WORLD_SIZE * WORLD_SIZE:
+        raise AssertionError(
+            f"expected {WORLD_SIZE * WORLD_SIZE} regular positions, got {len(positions)}"
+        )
 
     expected_positions = []
     expected_targets = []

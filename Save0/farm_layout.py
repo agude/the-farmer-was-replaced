@@ -19,8 +19,8 @@ from farm_config import (
 
 
 TREE_BUSH_END_X = 2
-GRASS_START_X = 3
-GRASS_END_X = 4
+GRASS_START_X = 0
+GRASS_END_X = 31
 
 
 def is_cactus_region(x: int, y: int) -> bool:

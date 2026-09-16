@@ -73,8 +73,7 @@ def test_all_features_enabled() -> None:
             Entities.Cactus: 225,
             Entities.Pumpkin: 289,
             Entities.Sunflower: 16,
-            Entities.Carrot: 409,
-            Entities.Grass: 34,
+            Entities.Grass: 443,
             Entities.Tree: 25,
             Entities.Bush: 26,
         },
@@ -88,8 +87,7 @@ def test_cactus_disabled() -> None:
         {
             Entities.Pumpkin: 289,
             Entities.Sunflower: 16,
-            Entities.Carrot: 559,
-            Entities.Grass: 64,
+            Entities.Grass: 623,
             Entities.Tree: 48,
             Entities.Bush: 48,
         },
@@ -103,8 +101,7 @@ def test_pumpkin_disabled() -> None:
         {
             Entities.Cactus: 225,
             Entities.Sunflower: 16,
-            Entities.Carrot: 698,
-            Entities.Grass: 34,
+            Entities.Grass: 732,
             Entities.Tree: 25,
             Entities.Bush: 26,
         },
@@ -119,8 +116,7 @@ def test_tree_bush_disabled() -> None:
             Entities.Cactus: 225,
             Entities.Pumpkin: 289,
             Entities.Sunflower: 16,
-            Entities.Carrot: 460,
-            Entities.Grass: 34,
+            Entities.Grass: 494,
         },
     )
 
@@ -148,10 +144,9 @@ def test_carrot_disabled() -> None:
             Entities.Cactus: 225,
             Entities.Pumpkin: 289,
             Entities.Sunflower: 16,
-            Entities.Grass: 34,
+            Entities.Grass: 443,
             Entities.Tree: 25,
             Entities.Bush: 26,
-            None: 409,
         },
     )
 
@@ -163,8 +158,7 @@ def test_sunflower_disabled() -> None:
         {
             Entities.Cactus: 225,
             Entities.Pumpkin: 289,
-            Entities.Carrot: 425,
-            Entities.Grass: 34,
+            Entities.Grass: 459,
             Entities.Tree: 25,
             Entities.Bush: 26,
         },

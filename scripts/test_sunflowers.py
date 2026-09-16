@@ -334,7 +334,7 @@ def test_power_target_skips_cycle() -> None:
         raise AssertionError(f"power target still ran a sunflower cycle: {simulator.events}")
 
 
-def test_disabled_patch_falls_through_to_carrots() -> None:
+def test_disabled_patch_falls_through_to_grass() -> None:
     farm_layout.ENABLE_CACTUS_PATCH = True
     farm_layout.ENABLE_PUMPKIN_PATCH = True
     farm_layout.ENABLE_SUNFLOWER_PATCH = False
@@ -348,7 +348,7 @@ def test_disabled_patch_falls_through_to_carrots() -> None:
         if not farm_layout.is_sunflower_region(x, y):
             raise AssertionError("sunflower position is outside its geometry")
 
-        if farm_layout.target_entity_at(x, y) != Entities.Carrot:
+        if farm_layout.target_entity_at(x, y) != Entities.Grass:
             raise AssertionError("disabled sunflower patch did not fall through")
 
     farm_layout.ENABLE_SUNFLOWER_PATCH = True
@@ -358,7 +358,7 @@ def main() -> None:
     test_patch_area()
     test_cycle_in_both_scan_directions()
     test_power_target_skips_cycle()
-    test_disabled_patch_falls_through_to_carrots()
+    test_disabled_patch_falls_through_to_grass()
     print("Passed sunflower lifecycle, ordering, pairing, power, and fallback tests")
 
 
