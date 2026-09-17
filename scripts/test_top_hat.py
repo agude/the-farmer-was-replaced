@@ -461,6 +461,47 @@ def test_gold_complete_does_not_request_weird_substance() -> None:
         raise AssertionError("completed Gold stage invoked the cactus action")
 
 
+def test_fertilizer_wait_resumes_planner() -> None:
+    reset_inventory()
+    inventory[Items.Power] = 20
+    top_hat.get_top_hat_cost = lambda: {Items.Gold: 10}
+    top_hat.get_maze_substance_cost = lambda: 5
+    top_hat.can_run_cactus = lambda *args: True
+    top_hat.run_item_producer = REAL_RUN_ITEM_PRODUCER
+    waits = []
+
+    def advance_time() -> None:
+        waits.append(True)
+        if len(waits) == 3:
+            inventory[Items.Fertilizer] = 1
+
+    top_hat.do_a_flip = advance_time
+    top_hat.farm_cactus_cycle = lambda *args: (
+        inventory.__setitem__(Items.Weird_Substance, 5) or True
+    )
+    top_hat.farm_mazes = lambda gold, reserve: inventory.__setitem__(Items.Gold, gold) or True
+
+    if not top_hat.farm_top_hat():
+        raise AssertionError("planner did not resume after fertilizer arrived")
+
+    if len(waits) != 3:
+        raise AssertionError("planner did not use bounded fertilizer waits")
+    if len(unlock_calls) != 1:
+        raise AssertionError("planner did not reach the unlock after waiting")
+
+
+def test_wait_diagnostics_are_rate_limited() -> None:
+    reset_inventory()
+    top_hat.WAIT_ACTION_COUNT = 0
+    top_hat.do_a_flip = lambda: None
+
+    for _ in range(21):
+        top_hat.run_wait_action()
+
+    if len(messages) != 3:
+        raise AssertionError("fertilizer wait diagnostics were not rate-limited")
+
+
 def test_power_boundary_uses_adaptive_target() -> None:
     reset_inventory()
     inventory[Items.Power] = 20
@@ -553,6 +594,8 @@ def main() -> None:
     test_gold_resamples_after_weird_substance_production()
     test_weird_substance_action_stops_at_immediate_target()
     test_gold_complete_does_not_request_weird_substance()
+    test_fertilizer_wait_resumes_planner()
+    test_wait_diagnostics_are_rate_limited()
     test_power_boundary_uses_adaptive_target()
     test_adaptive_power_target_runs_full_cycle()
     test_direct_dependency_cycle_stops_cleanly()

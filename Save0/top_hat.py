@@ -21,6 +21,13 @@ POWER_LOW_WATERMARK = POWER_TARGET // 10
 POWER_HIGH_WATERMARK = POWER_TARGET
 POWER_OBSERVED_CONSUMPTION = 0
 NO_PROGRESS_LIMIT = 2
+WAIT_DIAGNOSTIC_INTERVAL = 10
+ACTION_NONE = "none"
+ACTION_PRODUCER = "producer"
+ACTION_WAIT = "wait"
+ACTION_BLOCKED = "blocked"
+LAST_ACTION_RESULT = (ACTION_NONE, False)
+WAIT_ACTION_COUNT = 0
 
 
 def get_cost_amount(cost, item) -> int:
@@ -28,6 +35,16 @@ def get_cost_amount(cost, item) -> int:
         return cost[item]
 
     return 0
+
+
+def set_action_result(action, succeeded) -> None:
+    global LAST_ACTION_RESULT
+
+    LAST_ACTION_RESULT = (action, succeeded)
+
+
+def get_last_action_result():
+    return LAST_ACTION_RESULT
 
 
 def needs_item(cost, item) -> bool:
@@ -462,6 +479,7 @@ def run_item_producer(item, cost, blocked_item=None, stage=None) -> bool:
 def run_selected_producer(item, cost) -> bool:
     # Keep producer failures visible to the next planner iteration.
     result = run_item_producer(item, cost)
+    set_action_result(ACTION_PRODUCER, result)
 
     if not result:
         quick_print("Top Hat producer failed for " + str(item))
@@ -490,6 +508,31 @@ def run_required_action(item, cost) -> bool:
     return run_fallback_action(cost, item)
 
 
+def should_wait_for_fertilizer(cost) -> bool:
+    # Wait only for a Gold dependency that can become maze-fundable.
+    if not needs_item(cost, Items.Gold):
+        return False
+
+    if get_maze_substance_cost() <= 0 or can_run_maze(cost):
+        return False
+
+    return num_items(Items.Fertilizer) <= 0
+
+
+def run_wait_action() -> bool:
+    # Advance time once and rate-limit unattended wait diagnostics.
+    global WAIT_ACTION_COUNT
+
+    do_a_flip()
+    WAIT_ACTION_COUNT += 1
+    set_action_result(ACTION_WAIT, True)
+
+    if WAIT_ACTION_COUNT == 1 or WAIT_ACTION_COUNT % WAIT_DIAGNOSTIC_INTERVAL == 0:
+        quick_print("Top Hat planner waiting for fertilizer")
+
+    return True
+
+
 def perform_next_action(cost) -> bool:
     # Select one bounded action using current protected balances.
     power_target = get_power_target(cost)
@@ -507,7 +550,13 @@ def perform_next_action(cost) -> bool:
         return run_required_action(Items.Weird_Substance, cost)
 
     if needs_item(cost, Items.Gold):
-        return run_required_action(Items.Gold, cost)
+        if run_required_action(Items.Gold, cost):
+            return True
+
+        if should_wait_for_fertilizer(cost):
+            return run_wait_action()
+
+        return False
 
     if (
         is_power_stockpile_complete(cost)
@@ -523,6 +572,7 @@ def perform_next_action(cost) -> bool:
     if needs_item(cost, Items.Hay):
         return run_required_action(Items.Hay, cost)
 
+    set_action_result(ACTION_BLOCKED, False)
     quick_print("Top Hat planner has no selected action")
     return False
 
@@ -574,6 +624,8 @@ def record_power_consumption(before, after) -> None:
 
 def farm_top_hat() -> bool:
     # Reconcile live costs one bounded action at a time before unlocking.
+    global WAIT_ACTION_COUNT
+
     if num_unlocked(Unlocks.Top_Hat) > 0:
         return True
 
@@ -584,6 +636,7 @@ def farm_top_hat() -> bool:
         return False
 
     no_progress_count = 0
+    WAIT_ACTION_COUNT = 0
 
     while True:
         cost = get_top_hat_cost()
@@ -600,6 +653,7 @@ def farm_top_hat() -> bool:
             return False
 
         before = get_inventory_snapshot(cost)
+        set_action_result(ACTION_NONE, False)
         perform_next_action(cost)
 
         refreshed_cost = get_top_hat_cost()
@@ -610,7 +664,9 @@ def farm_top_hat() -> bool:
         after = get_inventory_snapshot(refreshed_cost)
         record_power_consumption(before, after)
 
-        if before == after:
+        if LAST_ACTION_RESULT[0] == ACTION_WAIT:
+            no_progress_count = 0
+        elif before == after:
             no_progress_count += 1
         else:
             no_progress_count = 0
