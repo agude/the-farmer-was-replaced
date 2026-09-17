@@ -296,13 +296,21 @@ def sort_cactus_column_job(job) -> bool:
     return True
 
 
-def harvest_cactus() -> bool:
+def harvest_cactus(
+    weird_substance_target=None,
+    fertilizer_reserve=None,
+    production_enabled=None,
+) -> bool:
     # Fertilize and harvest the mature cactus at the current tile.
     if not can_harvest():
         return False
 
     if FERTILIZE_CACTUS_HARVEST:
-        fertilize_before_harvest()
+        fertilize_before_harvest(
+            weird_substance_target,
+            fertilizer_reserve,
+            production_enabled,
+        )
 
     harvest()
     return True
@@ -314,6 +322,9 @@ def farm_cactus_cycle(
     width=CACTUS_SIZE,
     height=CACTUS_SIZE,
     reverse=False,
+    weird_substance_target=None,
+    fertilizer_reserve=None,
+    production_enabled=None,
 ) -> bool:
     # Grow, sort, and bulk-harvest one explicit cactus region.
     if width <= 0 or height <= 0:
@@ -347,7 +358,11 @@ def farm_cactus_cycle(
             return False
 
     move_to(start_x, start_y)
-    return harvest_cactus()
+    return harvest_cactus(
+        weird_substance_target,
+        fertilizer_reserve,
+        production_enabled,
+    )
 
 
 def farm_cactus_patch() -> bool:
