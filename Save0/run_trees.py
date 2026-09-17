@@ -1,5 +1,6 @@
 from farm_config import REGULAR_WATER_THRESHOLD
 from navigation import move_to
+from planting import plant_target_entity
 from watering import water_if_dry
 
 
@@ -21,8 +22,7 @@ def tend_tree_row() -> None:
             if can_harvest():
                 harvest()
 
-            if get_entity_type() != target:
-                plant(target)
+            plant_target_entity(target)
 
             water_if_dry(REGULAR_WATER_THRESHOLD)
             move(East)

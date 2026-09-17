@@ -99,7 +99,7 @@ class SunflowerSimulator:
     def get_entity_type(self):
         return self.tiles[self.current_position]["entity"]
 
-    def plant(self, entity) -> None:
+    def plant(self, entity) -> bool:
         tile = self.tiles[self.current_position]
 
         if len(self.harvest_records) > 0 and tile["entity"] is None:
@@ -109,6 +109,7 @@ class SunflowerSimulator:
         tile["mature"] = False
         self.events.append(("plant", self.current_position, self.phase))
         self.plant_records.append((self.cycle_number, self.current_position))
+        return True
 
     def harvest(self) -> None:
         remaining_petals = []

@@ -23,10 +23,10 @@ def pumpkin_end_y() -> int:
     return PUMPKIN_START_Y + PUMPKIN_SIZE - 1
 
 
-def plant_pumpkin() -> None:
+def plant_pumpkin() -> bool:
     # Ensure soil and plant a pumpkin on the current tile.
     ensure_soil()
-    plant(Entities.Pumpkin)
+    return plant(Entities.Pumpkin)
 
 
 def pumpkin_is_ready() -> bool:
@@ -47,7 +47,9 @@ def pumpkin_is_ready() -> bool:
     # Dead pumpkin.
     #
     if entity == Entities.Dead_Pumpkin:
-        plant_pumpkin()
+        if not plant_pumpkin():
+            return None
+
         water_if_dry(PUMPKIN_WATER_THRESHOLD)
         return False
 
@@ -55,7 +57,9 @@ def pumpkin_is_ready() -> bool:
     # Empty tile.
     #
     if entity == None:
-        plant_pumpkin()
+        if not plant_pumpkin():
+            return None
+
         water_if_dry(PUMPKIN_WATER_THRESHOLD)
         return False
 
@@ -65,7 +69,8 @@ def pumpkin_is_ready() -> bool:
     #
     if can_harvest():
         harvest()
-        plant_pumpkin()
+        if not plant_pumpkin():
+            return None
 
     water_if_dry(PUMPKIN_WATER_THRESHOLD)
 
@@ -82,7 +87,7 @@ def should_scan_forward(positions) -> bool:
     return choose_scan_direction(positions, distance_to)
 
 
-def wait_for_positions(positions) -> None:
+def wait_for_positions(positions) -> bool:
     # Revisit pending tiles until each has produced a mature pumpkin.
     #
     # A position remains pending until we have
@@ -104,10 +109,16 @@ def wait_for_positions(positions) -> None:
 
             move_to(x, y)
 
-            while not pumpkin_is_ready():
-                pass
+            while True:
+                readiness = pumpkin_is_ready()
 
-            return
+                if readiness == None:
+                    return False
+
+                if readiness:
+                    return True
+
+            return None
 
         still_pending = []
 
@@ -117,7 +128,12 @@ def wait_for_positions(positions) -> None:
 
                 move_to(x, y)
 
-                if not pumpkin_is_ready():
+                readiness = pumpkin_is_ready()
+
+                if readiness == None:
+                    return False
+
+                if not readiness:
                     still_pending.append((x, y))
 
         else:
@@ -126,13 +142,20 @@ def wait_for_positions(positions) -> None:
 
                 move_to(x, y)
 
-                if not pumpkin_is_ready():
+                readiness = pumpkin_is_ready()
+
+                if readiness == None:
+                    return False
+
+                if not readiness:
                     #
                     # Preserve normal snake order.
                     #
                     still_pending = [(x, y)] + still_pending
 
         pending = still_pending
+
+    return True
 
 
 def farm_pumpkin_patch() -> None:
@@ -145,7 +168,8 @@ def farm_pumpkin_patch() -> None:
     # Once a mature pumpkin is seen there, that
     # position drops out permanently.
     #
-    wait_for_positions(positions)
+    if not wait_for_positions(positions):
+        return False
 
     #
     # When this returns, EVERY pumpkin has been
@@ -158,3 +182,5 @@ def farm_pumpkin_patch() -> None:
         fertilize_before_harvest()
 
     harvest()
+
+    return True

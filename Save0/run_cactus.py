@@ -15,7 +15,7 @@ from cactus import (
 from navigation import distance_to, move_to
 
 
-def grow_cactus_row_until_ready() -> None:
+def grow_cactus_row_until_ready() -> bool:
     # Remember mature cactuses and revisit only unresolved positions.
     row_y = get_pos_y()
     pending = []
@@ -29,10 +29,16 @@ def grow_cactus_row_until_ready() -> None:
         if len(pending) == 1:
             move_to(pending[0], row_y)
 
-            while not maintain_cactus_tile():
-                pass
+            while True:
+                readiness = maintain_cactus_tile()
 
-            return
+                if readiness == None:
+                    return False
+
+                if readiness:
+                    return True
+
+            return None
 
         still_pending = []
 
@@ -42,17 +48,29 @@ def grow_cactus_row_until_ready() -> None:
                 x = pending[i]
                 move_to(x, row_y)
 
-                if not maintain_cactus_tile():
+                readiness = maintain_cactus_tile()
+
+                if readiness == None:
+                    return False
+
+                if not readiness:
                     still_pending.append(x)
         else:
             for i in range(len(pending) - 1, -1, -1):
                 x = pending[i]
                 move_to(x, row_y)
 
-                if not maintain_cactus_tile():
+                readiness = maintain_cactus_tile()
+
+                if readiness == None:
+                    return False
+
+                if not readiness:
                     still_pending = [x] + still_pending
 
         pending = still_pending
+
+    return True
 
 
 def sort_current_row() -> None:

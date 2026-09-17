@@ -43,11 +43,14 @@ def should_scan_forward(positions) -> bool:
     return choose_scan_direction(positions, distance_to)
 
 
-def plant_sunflower() -> None:
+def plant_sunflower() -> bool:
     # Plant and water a sunflower on the current tile.
     ensure_soil()
-    plant(Entities.Sunflower)
+    if not plant(Entities.Sunflower):
+        return False
+
     water_if_dry(SUNFLOWER_WATER_THRESHOLD)
+    return True
 
 
 def prepare_sunflower_tile() -> bool:
@@ -59,16 +62,14 @@ def prepare_sunflower_tile() -> bool:
         return True
 
     if entity == Entities.Dead_Pumpkin or entity == None:
-        plant_sunflower()
-        return True
+        return plant_sunflower()
 
     if not can_harvest():
         water_if_dry(SUNFLOWER_WATER_THRESHOLD)
-        return False
+        return None
 
     harvest()
-    plant_sunflower()
-    return True
+    return plant_sunflower()
 
 
 def plant_and_measure_sunflowers(positions):
@@ -85,11 +86,15 @@ def plant_and_measure_sunflowers(positions):
 
                 move_to(x, y)
 
-                if prepare_sunflower_tile():
+                preparation = prepare_sunflower_tile()
+
+                if preparation:
                     petals = measure()
                     positions_by_petals[petals - SUNFLOWER_MIN_PETALS].append((x, y))
-                else:
+                elif preparation == None:
                     still_pending.append((x, y))
+                else:
+                    return None
 
         else:
             for i in range(len(pending) - 1, -1, -1):
@@ -97,11 +102,15 @@ def plant_and_measure_sunflowers(positions):
 
                 move_to(x, y)
 
-                if prepare_sunflower_tile():
+                preparation = prepare_sunflower_tile()
+
+                if preparation:
                     petals = measure()
                     positions_by_petals[petals - SUNFLOWER_MIN_PETALS].append((x, y))
-                else:
+                elif preparation == None:
                     still_pending = [(x, y)] + still_pending
+                else:
+                    return None
 
         pending = still_pending
 
@@ -172,15 +181,19 @@ def needs_power() -> bool:
     return num_items(Items.Power) < POWER_TARGET
 
 
-def farm_sunflower_patch() -> None:
+def farm_sunflower_patch() -> bool:
     # Replenish power with one complete measured-petal harvest cycle.
     if not needs_power():
-        return
+        return None
 
     positions = get_sunflower_positions()
     positions_by_petals = plant_and_measure_sunflowers(positions)
+
+    if positions_by_petals == None:
+        return False
 
     wait_for_sunflowers(positions)
     harvest_count = len(positions) - SUNFLOWER_MIN_REMAINING
     harvested_positions = harvest_sunflowers(positions_by_petals, harvest_count)
     replant_sunflowers(harvested_positions)
+    return True

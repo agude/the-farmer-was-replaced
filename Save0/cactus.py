@@ -23,10 +23,10 @@ def cactus_end_y() -> int:
     return CACTUS_START_Y + CACTUS_SIZE - 1
 
 
-def plant_cactus() -> None:
+def plant_cactus() -> bool:
     # Ensure soil and plant a cactus on the current tile.
     ensure_soil()
-    plant(Entities.Cactus)
+    return plant(Entities.Cactus)
 
 
 def maintain_cactus_tile() -> bool:
@@ -41,7 +41,9 @@ def maintain_cactus_tile() -> bool:
         return False
 
     if entity == Entities.Dead_Pumpkin or entity == None:
-        plant_cactus()
+        if not plant_cactus():
+            return None
+
         water_if_dry(CACTUS_WATER_THRESHOLD)
         return False
 
@@ -51,7 +53,9 @@ def maintain_cactus_tile() -> bool:
         return False
 
     harvest()
-    plant_cactus()
+    if not plant_cactus():
+        return None
+
     water_if_dry(CACTUS_WATER_THRESHOLD)
 
     return False
@@ -67,7 +71,7 @@ def should_scan_forward(positions) -> bool:
     return choose_scan_direction(positions, distance_to)
 
 
-def wait_for_cactuses(positions) -> None:
+def wait_for_cactuses(positions) -> bool:
     # Revisit positions until every cactus is fully grown.
     pending = positions
 
@@ -80,7 +84,12 @@ def wait_for_cactuses(positions) -> None:
 
                 move_to(x, y)
 
-                if not maintain_cactus_tile():
+                readiness = maintain_cactus_tile()
+
+                if readiness == None:
+                    return False
+
+                if not readiness:
                     still_pending.append((x, y))
 
         else:
@@ -89,10 +98,17 @@ def wait_for_cactuses(positions) -> None:
 
                 move_to(x, y)
 
-                if not maintain_cactus_tile():
+                readiness = maintain_cactus_tile()
+
+                if readiness == None:
+                    return False
+
+                if not readiness:
                     still_pending = [(x, y)] + still_pending
 
         pending = still_pending
+
+    return True
 
 
 def sort_cactus_row(y: int) -> None:
@@ -187,7 +203,8 @@ def farm_cactus_patch() -> None:
     # Grow, sort, and bulk-harvest the cactus patch.
     positions = get_cactus_positions()
 
-    wait_for_cactuses(positions)
+    if not wait_for_cactuses(positions):
+        return False
     sort_cactuses()
 
     move_to(CACTUS_START_X, CACTUS_START_Y)
@@ -197,3 +214,5 @@ def farm_cactus_patch() -> None:
             fertilize_before_harvest()
 
         harvest()
+
+    return True

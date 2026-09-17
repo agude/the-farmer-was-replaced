@@ -61,7 +61,11 @@ parallel-farming-test:
 traversal-test:
     uv run scripts/test_traversal.py
 
-check: lint cactus-test farm-layout-test sunflower-test maze-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test
+# Run the CPython planting failure harness.
+planting-test:
+    uv run scripts/test_planting.py
+
+check: lint cactus-test farm-layout-test sunflower-test maze-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test
 
 hooks-install:
     ln -sf ../../bin/pre-commit.sh .git/hooks/pre-commit

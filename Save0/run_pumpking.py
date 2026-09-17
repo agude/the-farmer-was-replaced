@@ -4,7 +4,7 @@ from navigation import distance_to, move_to
 from pumpkins import pumpkin_is_ready
 
 
-def grow_row_until_ready() -> None:
+def grow_row_until_ready() -> bool:
     # Remember unresolved positions so mature pumpkins are never checked again.
     size = get_world_size()
     row_y = get_pos_y()
@@ -16,10 +16,16 @@ def grow_row_until_ready() -> None:
         if len(pending) == 1:
             move_to(pending[0], row_y)
 
-            while not pumpkin_is_ready():
-                pass
+            while True:
+                readiness = pumpkin_is_ready()
 
-            return
+                if readiness == None:
+                    return False
+
+                if readiness:
+                    return True
+
+            return None
 
         still_pending = []
 
@@ -30,17 +36,29 @@ def grow_row_until_ready() -> None:
                 x = pending[i]
                 move_to(x, row_y)
 
-                if not pumpkin_is_ready():
+                readiness = pumpkin_is_ready()
+
+                if readiness == None:
+                    return False
+
+                if not readiness:
                     still_pending.append(x)
         else:
             for i in range(len(pending) - 1, -1, -1):
                 x = pending[i]
                 move_to(x, row_y)
 
-                if not pumpkin_is_ready():
+                readiness = pumpkin_is_ready()
+
+                if readiness == None:
+                    return False
+
+                if not readiness:
                     still_pending = [x] + still_pending
 
         pending = still_pending
+
+    return True
 
 
 def grow_full_patch() -> None:

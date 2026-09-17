@@ -16,8 +16,15 @@ from watering import water_if_dry
 def prepare_sunflower_tile_until_planted():
     # Prepare one tile without waiting for its sunflower to mature.
     while True:
-        if prepare_sunflower_tile():
-            return
+        preparation = prepare_sunflower_tile()
+
+        if preparation:
+            return True
+
+        if preparation == None:
+            continue
+
+        return False
 
 
 def measure_sunflower_when_ready():
@@ -58,7 +65,8 @@ def grow_sunflower_row_until_ready():
     for x in range(size):
         move_to(x, row_y)
 
-        prepare_sunflower_tile_until_planted()
+        if not prepare_sunflower_tile_until_planted():
+            return None
 
     # Only after the row is planted do we wait and measure each flower.
     for x in range(size):

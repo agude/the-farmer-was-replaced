@@ -4,12 +4,12 @@ def ensure_soil() -> None:
         till()
 
 
-def plant_target_entity(target) -> None:
+def plant_target_entity(target) -> bool:
     # Plant the layout-selected entity on the current tile.
     if get_entity_type() == target:
-        return
+        return True
 
     if target == Entities.Carrot:
         ensure_soil()
 
-    plant(target)
+    return plant(target)

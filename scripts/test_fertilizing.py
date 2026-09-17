@@ -48,6 +48,7 @@ def record_harvest() -> None:
 
 def record_wait(*args) -> None:
     events.append("wait")
+    return True
 
 
 def record_sort() -> None:

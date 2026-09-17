@@ -6,7 +6,7 @@ from planting import plant_target_entity
 from watering import water_if_dry
 
 
-def tend_regular_tile(target) -> None:
+def tend_regular_tile(target) -> bool:
     # Harvest, plant, and water the current regular target tile.
     if can_harvest():
         if FERTILIZE_REGULAR_HARVESTS:
@@ -14,8 +14,11 @@ def tend_regular_tile(target) -> None:
 
         harvest()
 
-    plant_target_entity(target)
+    if not plant_target_entity(target):
+        return False
+
     water_if_dry(REGULAR_WATER_THRESHOLD)
+    return True
 
 
 def get_regular_positions():
