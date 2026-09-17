@@ -57,7 +57,11 @@ fertilizing-test:
 parallel-farming-test:
     uv run scripts/test_parallel_farming.py
 
-check: lint cactus-test farm-layout-test sunflower-test maze-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test
+# Run the CPython shared traversal harness.
+traversal-test:
+    uv run scripts/test_traversal.py
+
+check: lint cactus-test farm-layout-test sunflower-test maze-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test
 
 hooks-install:
     ln -sf ../../bin/pre-commit.sh .git/hooks/pre-commit

@@ -8,6 +8,8 @@ from farm_config import (
 from fertilizing import fertilize_before_harvest
 from navigation import distance_to, move_to
 from planting import ensure_soil
+from traversal import get_snake_positions
+from traversal import should_scan_forward as choose_scan_direction
 from watering import water_if_dry
 
 
@@ -57,28 +59,12 @@ def maintain_cactus_tile() -> bool:
 
 def get_cactus_positions():
     # Return all cactus-patch positions in continuous snake order.
-    positions = []
-
-    for x in range(CACTUS_START_X, cactus_end_x() + 1):
-        column = x - CACTUS_START_X
-
-        if column % 2 == 0:
-            for y in range(CACTUS_START_Y, cactus_end_y() + 1):
-                positions.append((x, y))
-
-        else:
-            for y in range(cactus_end_y(), CACTUS_START_Y - 1, -1):
-                positions.append((x, y))
-
-    return positions
+    return get_snake_positions(CACTUS_START_X, CACTUS_START_Y, CACTUS_SIZE, CACTUS_SIZE)
 
 
 def should_scan_forward(positions) -> bool:
     # Return whether the first position is nearer than the last.
-    first_x, first_y = positions[0]
-    last_x, last_y = positions[len(positions) - 1]
-
-    return distance_to(first_x, first_y) <= distance_to(last_x, last_y)
+    return choose_scan_direction(positions, distance_to)
 
 
 def wait_for_cactuses(positions) -> None:
