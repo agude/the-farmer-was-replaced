@@ -205,6 +205,47 @@ def test_policy_priority() -> None:
         raise AssertionError("carrots were not deferred until prerequisites completed")
 
 
+def test_power_reaches_high_watermark_without_live_power_cost() -> None:
+    reset_inventory()
+    cost = {Items.Wood: 1}
+    actions = []
+    top_hat.run_item_producer = lambda item, policy: actions.append(item) or True
+
+    top_hat.perform_next_action(cost)
+    if actions[-1] != Items.Power:
+        raise AssertionError("low power watermark did not trigger replenishment")
+
+    inventory[Items.Power] = 10
+    top_hat.perform_next_action(cost)
+    if actions[-1] != Items.Power:
+        raise AssertionError("power did not refill from low to high watermark")
+
+    inventory[Items.Power] = 20
+    top_hat.perform_next_action(cost)
+    if actions[-1] != Items.Wood:
+        raise AssertionError("planner did not leave power mode at the high watermark")
+
+
+def test_tree_budget_counts_checkerboard_tiles() -> None:
+    reset_inventory()
+    original_budget = top_hat.get_planting_budget
+    calls = []
+
+    def record_budget(entity, width, height):
+        calls.append((entity, width, height))
+        return {Items.Wood: width * height}
+
+    top_hat.get_planting_budget = record_budget
+    budget = top_hat.get_tree_cycle_budget(4, 3)
+    top_hat.get_planting_budget = original_budget
+
+    if budget != {Items.Wood: 12}:
+        raise AssertionError(f"tree budget counted non-checkerboard tiles: {budget}")
+
+    if calls != [(Entities.Tree, 6, 1), (Entities.Bush, 6, 1)]:
+        raise AssertionError(f"checkerboard geometry was not passed to costs: {calls}")
+
+
 def test_protected_balance_plus_cycle_budget() -> None:
     reset_inventory()
     inventory[Items.Wood] = 5

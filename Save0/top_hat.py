@@ -33,11 +33,17 @@ def needs_item(cost, item) -> bool:
     return num_items(item) < get_cost_amount(cost, item)
 
 
-def is_power_stockpile_complete(cost) -> bool:
-    if not needs_item(cost, Items.Power):
-        return num_items(Items.Power) >= POWER_HIGH_WATERMARK
+def get_power_target(cost) -> int:
+    target = get_cost_amount(cost, Items.Power)
 
-    return False
+    if target < POWER_HIGH_WATERMARK:
+        return POWER_HIGH_WATERMARK
+
+    return target
+
+
+def is_power_stockpile_complete(cost) -> bool:
+    return num_items(Items.Power) >= get_power_target(cost)
 
 
 def merge_costs(first_cost, second_cost):
@@ -64,8 +70,18 @@ def get_entity_cycle_budget(entity, width, height):
 
 
 def get_tree_cycle_budget(width, height):
-    tree_budget = get_entity_cycle_budget(Entities.Tree, width, height)
-    bush_budget = get_entity_cycle_budget(Entities.Bush, width, height)
+    tree_tiles = 0
+    bush_tiles = 0
+
+    for x in range(width):
+        for y in range(height):
+            if (x + y) % 2:
+                tree_tiles += 1
+            else:
+                bush_tiles += 1
+
+    tree_budget = get_entity_cycle_budget(Entities.Tree, tree_tiles, 1)
+    bush_budget = get_entity_cycle_budget(Entities.Bush, bush_tiles, 1)
     return merge_costs(tree_budget, bush_budget)
 
 
@@ -246,22 +262,34 @@ def run_item_producer(item, cost, blocked_item=None) -> bool:
     return False
 
 
+def run_selected_producer(item, cost) -> bool:
+    # Keep producer failures visible to the next planner iteration.
+    result = run_item_producer(item, cost)
+
+    if not result:
+        quick_print("Top Hat producer failed for " + str(item))
+
+    return result
+
+
 def perform_next_action(cost) -> bool:
     # Select one bounded action using current protected balances.
-    if needs_item(cost, Items.Power) and num_items(Items.Power) < POWER_LOW_WATERMARK:
-        return run_item_producer(Items.Power, cost)
+    power_target = get_power_target(cost)
 
-    if needs_item(cost, Items.Power) and num_items(Items.Power) < POWER_HIGH_WATERMARK:
-        return run_item_producer(Items.Power, cost)
+    if num_items(Items.Power) < POWER_LOW_WATERMARK:
+        return run_selected_producer(Items.Power, cost)
+
+    if num_items(Items.Power) < power_target:
+        return run_selected_producer(Items.Power, cost)
 
     if needs_item(cost, Items.Cactus) or needs_item(cost, Items.Weird_Substance):
         if needs_item(cost, Items.Cactus):
-            return run_item_producer(Items.Cactus, cost)
+            return run_selected_producer(Items.Cactus, cost)
 
-        return run_item_producer(Items.Weird_Substance, cost)
+        return run_selected_producer(Items.Weird_Substance, cost)
 
     if needs_item(cost, Items.Gold):
-        return run_item_producer(Items.Gold, cost)
+        return run_selected_producer(Items.Gold, cost)
 
     if (
         is_power_stockpile_complete(cost)
@@ -269,13 +297,13 @@ def perform_next_action(cost) -> bool:
         and not needs_item(cost, Items.Gold)
         and needs_item(cost, Items.Carrot)
     ):
-        return run_item_producer(Items.Carrot, cost)
+        return run_selected_producer(Items.Carrot, cost)
 
     if needs_item(cost, Items.Wood):
-        return run_item_producer(Items.Wood, cost)
+        return run_selected_producer(Items.Wood, cost)
 
     if needs_item(cost, Items.Hay):
-        return run_item_producer(Items.Hay, cost)
+        return run_selected_producer(Items.Hay, cost)
 
     quick_print("Top Hat planner has no selected action")
     return False
