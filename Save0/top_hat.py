@@ -51,6 +51,62 @@ def is_power_stockpile_complete(cost) -> bool:
     return num_items(Items.Power) >= get_power_target(cost)
 
 
+def add_protected_balance(protected_inventory, item, amount) -> None:
+    if amount > 0:
+        protected_inventory[item] = amount
+
+
+def get_protected_inventory(cost, stage):
+    # Protect only completed earlier stages while funding the current stage.
+    protected_inventory = {}
+
+    if stage != Items.Power and is_power_stockpile_complete(cost):
+        add_protected_balance(
+            protected_inventory,
+            Items.Power,
+            get_power_target(cost),
+        )
+
+    if stage != Items.Cactus and not (
+        stage == Items.Weird_Substance and not needs_item(cost, Items.Cactus)
+    ):
+        if not needs_item(cost, Items.Cactus):
+            add_protected_balance(
+                protected_inventory,
+                Items.Cactus,
+                get_cost_amount(cost, Items.Cactus),
+            )
+
+    if stage != Items.Gold and not needs_item(cost, Items.Gold):
+        add_protected_balance(
+            protected_inventory,
+            Items.Gold,
+            get_cost_amount(cost, Items.Gold),
+        )
+
+    if stage not in (Items.Carrot, Items.Pumpkin, Items.Cactus):
+        if (
+            is_power_stockpile_complete(cost)
+            and not needs_item(cost, Items.Cactus)
+            and not needs_item(cost, Items.Gold)
+            and not needs_item(cost, Items.Carrot)
+        ):
+            add_protected_balance(
+                protected_inventory,
+                Items.Carrot,
+                get_cost_amount(cost, Items.Carrot),
+            )
+
+    if stage == Items.Hay and not needs_item(cost, Items.Wood):
+        add_protected_balance(
+            protected_inventory,
+            Items.Wood,
+            get_cost_amount(cost, Items.Wood),
+        )
+
+    return protected_inventory
+
+
 def merge_costs(first_cost, second_cost):
     # Combine live budgets for mixed tree and bush rows.
     if first_cost == None or second_cost == None:
@@ -90,8 +146,8 @@ def get_tree_cycle_budget(width, height):
     return merge_costs(tree_budget, bush_budget)
 
 
-def get_missing_input(cycle_budget, protected_cost):
-    required = get_required_inventory(cycle_budget, protected_cost)
+def get_missing_input(cycle_budget, protected_inventory):
+    required = get_required_inventory({}, protected_inventory, cycle_budget)
 
     if required == None:
         return None
@@ -103,36 +159,51 @@ def get_missing_input(cycle_budget, protected_cost):
     return None
 
 
-def can_run_budget(cycle_budget, protected_cost) -> bool:
+def can_run_budget(cycle_budget, protected_inventory) -> bool:
     if cycle_budget == None:
         return False
 
-    return can_afford_cost(cycle_budget, protected_cost)
+    return can_afford_cost({}, protected_inventory, cycle_budget)
 
 
-def can_run_sunflowers(cost, size) -> bool:
+def can_run_sunflowers(cost, size, stage=None) -> bool:
+    if stage == None:
+        stage = Items.Power
+
     budget = get_entity_cycle_budget(Entities.Sunflower, size, size)
-    return can_run_budget(budget, cost)
+    return can_run_budget(budget, get_protected_inventory(cost, stage))
 
 
-def can_run_carrots(cost, size) -> bool:
+def can_run_carrots(cost, size, stage=None) -> bool:
+    if stage == None:
+        stage = Items.Carrot
+
     budget = get_entity_cycle_budget(Entities.Carrot, size, size)
-    return can_run_budget(budget, cost)
+    return can_run_budget(budget, get_protected_inventory(cost, stage))
 
 
-def can_run_pumpkins(cost, size) -> bool:
+def can_run_pumpkins(cost, size, stage=None) -> bool:
+    if stage == None:
+        stage = Items.Cactus
+
     budget = get_entity_cycle_budget(Entities.Pumpkin, size, size)
-    return can_run_budget(budget, cost)
+    return can_run_budget(budget, get_protected_inventory(cost, stage))
 
 
-def can_run_cactus(cost, size) -> bool:
+def can_run_cactus(cost, size, stage=None) -> bool:
+    if stage == None:
+        stage = Items.Cactus
+
     budget = get_entity_cycle_budget(Entities.Cactus, size, size)
-    return can_run_budget(budget, cost)
+    return can_run_budget(budget, get_protected_inventory(cost, stage))
 
 
-def can_run_trees(cost, size) -> bool:
+def can_run_trees(cost, size, stage=None) -> bool:
+    if stage == None:
+        stage = Items.Wood
+
     budget = get_tree_cycle_budget(size, size)
-    return can_run_budget(budget, cost)
+    return can_run_budget(budget, get_protected_inventory(cost, stage))
 
 
 def can_run_maze(cost) -> bool:
@@ -149,7 +220,12 @@ def can_run_maze(cost) -> bool:
 
 
 def run_cactus_action(cost, size) -> bool:
-    weird_target = get_cost_amount(cost, Items.Weird_Substance)
+    weird_target = get_maze_substance_cost()
+
+    if weird_target < 0:
+        weird_target = 0
+
+    weird_target = weird_target + get_cost_amount(cost, Items.Weird_Substance)
 
     return farm_cactus_cycle(
         0,
@@ -163,11 +239,14 @@ def run_cactus_action(cost, size) -> bool:
     )
 
 
-def run_item_producer(item, cost, blocked_item=None) -> bool:
+def run_item_producer(item, cost, blocked_item=None, stage=None) -> bool:
     # Produce one missing resource, recursively funding its next input.
     if item == blocked_item:
         quick_print("Top Hat producer dependency cycle")
         return False
+
+    if stage == None:
+        stage = item
 
     size = get_world_size()
 
@@ -175,80 +254,86 @@ def run_item_producer(item, cost, blocked_item=None) -> bool:
         return farm_hay_cycle()
 
     if item == Items.Wood:
-        if can_run_trees(cost, size):
+        if can_run_trees(cost, size, stage):
             return farm_tree_cycle()
 
         budget = get_tree_cycle_budget(size, size)
-        missing_item = get_missing_input(budget, cost)
+        protected_inventory = get_protected_inventory(cost, stage)
+        missing_item = get_missing_input(budget, protected_inventory)
         if missing_item == None:
             quick_print("Wood cycle is not affordable")
             return False
 
-        return run_item_producer(missing_item, cost, item)
+        return run_item_producer(missing_item, cost, item, stage)
 
     if item == Items.Carrot:
-        if can_run_carrots(cost, size):
+        if can_run_carrots(cost, size, stage):
             return farm_carrot_cycle()
 
         budget = get_entity_cycle_budget(Entities.Carrot, size, size)
-        missing_item = get_missing_input(budget, cost)
+        protected_inventory = get_protected_inventory(cost, stage)
+        missing_item = get_missing_input(budget, protected_inventory)
         if missing_item == None:
             quick_print("Carrot cycle is not affordable")
             return False
 
-        return run_item_producer(missing_item, cost, item)
+        return run_item_producer(missing_item, cost, item, stage)
 
     if item == Items.Pumpkin:
-        if can_run_pumpkins(cost, size):
+        if can_run_pumpkins(cost, size, stage):
             return farm_pumpkin_cycle()
 
         budget = get_entity_cycle_budget(Entities.Pumpkin, size, size)
-        missing_item = get_missing_input(budget, cost)
+        protected_inventory = get_protected_inventory(cost, stage)
+        missing_item = get_missing_input(budget, protected_inventory)
         if missing_item == None:
             quick_print("Pumpkin cycle is not affordable")
             return False
 
-        return run_item_producer(missing_item, cost, item)
+        return run_item_producer(missing_item, cost, item, stage)
 
     if item == Items.Cactus:
-        if can_run_cactus(cost, size):
+        if can_run_cactus(cost, size, stage):
             return run_cactus_action(cost, size)
 
         budget = get_entity_cycle_budget(Entities.Cactus, size, size)
-        missing_item = get_missing_input(budget, cost)
+        protected_inventory = get_protected_inventory(cost, stage)
+        missing_item = get_missing_input(budget, protected_inventory)
         if missing_item == None:
             quick_print("Cactus cycle is not affordable")
             return False
 
-        return run_item_producer(missing_item, cost, item)
+        return run_item_producer(missing_item, cost, item, stage)
 
     if item == Items.Power:
-        if can_run_sunflowers(cost, size):
+        if can_run_sunflowers(cost, size, stage):
             return farm_sunflower_cycle()
 
         budget = get_entity_cycle_budget(Entities.Sunflower, size, size)
-        missing_item = get_missing_input(budget, cost)
+        protected_inventory = get_protected_inventory(cost, stage)
+        missing_item = get_missing_input(budget, protected_inventory)
         if missing_item == None:
             quick_print("Power cycle is not affordable")
             return False
 
-        return run_item_producer(missing_item, cost, item)
+        return run_item_producer(missing_item, cost, item, stage)
 
     if item == Items.Weird_Substance:
         if num_items(Items.Fertilizer) <= 0:
             quick_print("Missing fertilizer for Weird Substance")
             return False
 
-        if can_run_cactus(cost, size):
+        if can_run_cactus(cost, size, stage):
             return run_cactus_action(cost, size)
 
         budget = get_entity_cycle_budget(Entities.Cactus, size, size)
-        missing_item = get_missing_input(budget, cost)
+        protected_inventory = get_protected_inventory(cost, stage)
+        missing_item = get_missing_input(budget, protected_inventory)
         if missing_item == None:
             quick_print("Weird Substance cycle is not affordable")
             return False
 
-        return run_item_producer(missing_item, cost, item)
+        return run_item_producer(missing_item, cost, item, stage)
 
     if item == Items.Gold:
         if can_run_maze(cost):
@@ -258,7 +343,7 @@ def run_item_producer(item, cost, blocked_item=None) -> bool:
             )
 
         if num_items(Items.Fertilizer) > 0:
-            return run_item_producer(Items.Weird_Substance, cost, item)
+            return run_item_producer(Items.Weird_Substance, cost, item, stage)
 
         quick_print("Gold cycle is waiting for Weird Substance")
         return False

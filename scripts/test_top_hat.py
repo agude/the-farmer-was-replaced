@@ -48,6 +48,7 @@ top_hat.Entities = Entities
 top_hat.Unlocks = Unlocks
 REAL_PERFORM_NEXT_ACTION = top_hat.perform_next_action
 REAL_RUN_ITEM_PRODUCER = top_hat.run_item_producer
+REAL_CAN_RUN_CACTUS = top_hat.can_run_cactus
 inventory = {}
 messages = []
 unlock_calls = []
@@ -272,16 +273,25 @@ def test_tree_budget_counts_checkerboard_tiles() -> None:
 
 def test_protected_balance_plus_cycle_budget() -> None:
     reset_inventory()
-    inventory[Items.Wood] = 5
+    inventory[Items.Power] = 20
+    inventory[Items.Cactus] = 3
+    inventory[Items.Gold] = 2
+    inventory[Items.Wood] = 2
     top_hat.get_planting_budget = lambda entity, width, height: {Items.Wood: 2}
-    cost = {Items.Wood: 3}
+    cost = {
+        Items.Power: 1,
+        Items.Cactus: 3,
+        Items.Gold: 2,
+        Items.Carrot: 999,
+        Items.Wood: 999,
+    }
 
     if not top_hat.can_run_carrots(cost, 2):
-        raise AssertionError("exact protected balance plus cycle budget was rejected")
+        raise AssertionError("stage-protected balance plus cycle budget was rejected")
 
-    inventory[Items.Wood] = 4
+    inventory[Items.Wood] = 1
     if top_hat.can_run_carrots(cost, 2):
-        raise AssertionError("underfunded protected balance was accepted")
+        raise AssertionError("underfunded cycle budget was accepted")
 
 
 def test_missing_fertilizer_reports_wait() -> None:
@@ -314,12 +324,93 @@ def test_gold_and_cactus_receive_live_policy() -> None:
     if maze_calls != [(10, 1)]:
         raise AssertionError(f"maze did not receive live targets: {maze_calls}")
 
-    top_hat.can_run_cactus = lambda policy, size: True
+    top_hat.can_run_cactus = lambda *args: True
     if not top_hat.run_item_producer(Items.Cactus, cost):
         raise AssertionError("funded cactus action reported failure")
 
-    if cactus_calls[-1][5] != 1 or cactus_calls[-1][7] is not True:
-        raise AssertionError("cactus did not receive live Weird Substance policy")
+    if cactus_calls[-1][5] != 6 or cactus_calls[-1][7] is not True:
+        raise AssertionError("cactus did not receive maze-funded Weird Substance policy")
+
+
+def test_cactus_cycle_ignores_missing_final_cactus_balance() -> None:
+    reset_inventory()
+    top_hat.can_run_cactus = REAL_CAN_RUN_CACTUS
+    inventory[Items.Hay] = 1
+    inventory[Items.Wood] = 1
+    inventory[Items.Carrot] = 1
+    inventory[Items.Pumpkin] = 1
+    inventory[Items.Gold] = 1
+    inventory[Items.Power] = 20
+    cactus_calls = []
+
+    def cactus_budget(entity, width, height):
+        if entity == Entities.Cactus:
+            return {Items.Pumpkin: 1}
+
+        return {}
+
+    top_hat.get_entity_cycle_budget = cactus_budget
+    top_hat.farm_cactus_cycle = lambda *args: cactus_calls.append(args) or True
+    cost = {
+        Items.Hay: 1,
+        Items.Wood: 1,
+        Items.Carrot: 1,
+        Items.Cactus: 10,
+        Items.Gold: 1,
+    }
+
+    top_hat.perform_next_action = REAL_PERFORM_NEXT_ACTION
+    if not top_hat.perform_next_action(cost):
+        raise AssertionError("funded cactus cycle was blocked by its final output")
+
+    if len(cactus_calls) != 1:
+        raise AssertionError("cactus producer was not called for a funded cycle")
+
+
+def test_gold_plans_positive_weird_substance_target() -> None:
+    reset_inventory()
+    inventory[Items.Power] = 20
+    inventory[Items.Fertilizer] = 1
+    top_hat.get_maze_substance_cost = lambda: 5
+    top_hat.can_run_cactus = lambda *args: True
+    cactus_calls = []
+    top_hat.farm_cactus_cycle = lambda *args: cactus_calls.append(args) or True
+
+    if not top_hat.run_item_producer(Items.Gold, {Items.Gold: 10}):
+        raise AssertionError("Gold dependency planning reported failure")
+
+    if len(cactus_calls) != 1:
+        raise AssertionError("Gold planning did not request Weird Substance production")
+
+    if cactus_calls[0][5] != 5:
+        raise AssertionError(
+            "Weird Substance target did not use the immediate maze cost: " + str(cactus_calls[0][5])
+        )
+
+
+def test_power_boundary_uses_adaptive_target() -> None:
+    reset_inventory()
+    inventory[Items.Power] = 20
+    top_hat.POWER_OBSERVED_CONSUMPTION = 8
+    actions = []
+    top_hat.run_item_producer = lambda item, policy: actions.append(item) or True
+
+    top_hat.perform_next_action({Items.Wood: 1})
+
+    if actions[-1] != Items.Power:
+        raise AssertionError("power at the static target did not reach the adaptive target")
+
+
+def test_direct_dependency_cycle_stops_cleanly() -> None:
+    reset_inventory()
+    top_hat.run_item_producer = REAL_RUN_ITEM_PRODUCER
+    top_hat.get_entity_cycle_budget = lambda entity, width, height: {Items.Carrot: 1}
+
+    if top_hat.run_item_producer(Items.Carrot, {Items.Hay: 1}):
+        raise AssertionError("direct dependency cycle reported progress")
+
+    if "cycle" not in messages[-1].lower():
+        raise AssertionError("direct dependency cycle was not reported")
 
 
 def main() -> None:
@@ -335,6 +426,10 @@ def main() -> None:
     test_protected_balance_plus_cycle_budget()
     test_missing_fertilizer_reports_wait()
     test_gold_and_cactus_receive_live_policy()
+    test_cactus_cycle_ignores_missing_final_cactus_balance()
+    test_gold_plans_positive_weird_substance_target()
+    test_power_boundary_uses_adaptive_target()
+    test_direct_dependency_cycle_stops_cleanly()
     print("Passed Top Hat planner policy, live-cost, safeguard, and routing tests")
 
 

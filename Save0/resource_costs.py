@@ -1,8 +1,15 @@
-def get_valid_cost(target):
-    # Return a live positive cost map, or report why it is unusable.
+def get_valid_cost(target, allow_empty=False):
+    # Return a live cost map, or report why it is unusable.
     cost = get_cost(target)
 
-    if cost == None or len(cost) == 0:
+    if cost == None:
+        quick_print("Missing resource cost")
+        return None
+
+    if len(cost) == 0:
+        if allow_empty:
+            return cost
+
         quick_print("Missing resource cost")
         return None
 
@@ -23,7 +30,7 @@ def get_top_hat_cost():
 
 def get_planting_budget(entity, width: int, height: int):
     # Scale a live per-tile planting cost by explicit region geometry.
-    cost = get_valid_cost(entity)
+    cost = get_valid_cost(entity, True)
 
     if cost == None or width <= 0 or height <= 0:
         if cost != None:
@@ -41,7 +48,7 @@ def get_planting_budget(entity, width: int, height: int):
 
 def get_required_inventory(cost, protected_inventory=None, cycle_budget=None):
     # Combine a live cost with protected balances and the next cycle budget.
-    if cost == None or len(cost) == 0:
+    if cost == None:
         quick_print("Missing required inventory cost")
         return None
 

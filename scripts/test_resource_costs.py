@@ -101,6 +101,10 @@ def test_invalid_costs_are_visible_failures() -> None:
     if resource_costs.get_planting_budget(Items.Carrot, 0, 4) is not None:
         raise AssertionError("empty planting region was accepted")
 
+    costs[Items.Cactus] = {}
+    if resource_costs.get_planting_budget(Items.Cactus, 4, 4) != {}:
+        raise AssertionError("zero-cost entity was rejected")
+
 
 def main() -> None:
     test_live_top_hat_cost()
