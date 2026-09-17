@@ -219,13 +219,26 @@ def can_run_maze(cost) -> bool:
     )
 
 
-def run_cactus_action(cost, size) -> bool:
-    weird_target = get_maze_substance_cost()
+def get_weird_substance_target(cost) -> int:
+    # Fund one immediate maze and preserve any explicit final reserve.
+    substance_reserve = get_cost_amount(cost, Items.Weird_Substance)
+    if Items.Gold not in cost or num_items(Items.Gold) >= get_cost_amount(
+        cost,
+        Items.Gold,
+    ):
+        return substance_reserve
 
-    if weird_target < 0:
-        weird_target = 0
+    maze_cost = get_maze_substance_cost()
 
-    weird_target = weird_target + get_cost_amount(cost, Items.Weird_Substance)
+    if maze_cost < 0:
+        maze_cost = 0
+
+    return maze_cost + substance_reserve
+
+
+def run_cactus_action(cost, size, weird_substance_target=None) -> bool:
+    if weird_substance_target == None:
+        weird_substance_target = get_weird_substance_target(cost)
 
     return farm_cactus_cycle(
         0,
@@ -233,7 +246,7 @@ def run_cactus_action(cost, size) -> bool:
         size,
         size,
         CACTUS_REVERSE_SORT,
-        weird_target,
+        weird_substance_target,
         0,
         True,
     )
@@ -336,7 +349,14 @@ def resolve_item_producer(item, cost, stage, dependency_path):
 
     if item == Items.Cactus:
         if can_run_cactus(cost, size, stage):
-            return get_operation_result(item, run_cactus_action(cost, size))
+            return get_operation_result(
+                item,
+                run_cactus_action(
+                    cost,
+                    size,
+                    get_weird_substance_target(cost),
+                ),
+            )
 
         budget = get_entity_cycle_budget(Entities.Cactus, size, size)
         protected_inventory = get_protected_inventory(cost, stage)
@@ -365,6 +385,13 @@ def resolve_item_producer(item, cost, stage, dependency_path):
         return resolve_item_producer(missing_item, cost, stage, path)
 
     if item == Items.Weird_Substance:
+        weird_substance_target = get_weird_substance_target(cost)
+        if num_items(Items.Weird_Substance) >= weird_substance_target:
+            return make_producer_result(
+                False,
+                "Weird Substance target already satisfied",
+            )
+
         if num_items(Items.Fertilizer) <= 0:
             return make_producer_result(
                 False,
@@ -372,7 +399,10 @@ def resolve_item_producer(item, cost, stage, dependency_path):
             )
 
         if can_run_cactus(cost, size, stage):
-            return get_operation_result(item, run_cactus_action(cost, size))
+            return get_operation_result(
+                item,
+                run_cactus_action(cost, size, weird_substance_target),
+            )
 
         budget = get_entity_cycle_budget(Entities.Cactus, size, size)
         protected_inventory = get_protected_inventory(cost, stage)

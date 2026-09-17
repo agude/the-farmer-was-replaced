@@ -388,6 +388,79 @@ def test_gold_plans_positive_weird_substance_target() -> None:
         )
 
 
+def test_gold_resamples_after_weird_substance_production() -> None:
+    reset_inventory()
+    inventory[Items.Power] = 20
+    inventory[Items.Fertilizer] = 1
+    top_hat.get_maze_substance_cost = lambda: 5
+    top_hat.can_run_cactus = lambda *args: True
+    cactus_calls = []
+    maze_calls = []
+
+    def produce_weird_substance(*args):
+        cactus_calls.append(args)
+        inventory[Items.Weird_Substance] += 5
+        return True
+
+    top_hat.farm_cactus_cycle = produce_weird_substance
+    top_hat.farm_mazes = lambda gold, reserve: maze_calls.append((gold, reserve)) or True
+    cost = {Items.Gold: 10}
+
+    if not top_hat.run_item_producer(Items.Gold, cost):
+        raise AssertionError("Weird Substance production reported failure")
+
+    if maze_calls:
+        raise AssertionError("Gold planning spent maze inputs before resampling")
+
+    if not top_hat.run_item_producer(Items.Gold, cost):
+        raise AssertionError("resampled maze action reported failure")
+
+    if maze_calls != [(10, 0)]:
+        raise AssertionError("Gold planning did not resample after Weird Substance production")
+
+
+def test_weird_substance_action_stops_at_immediate_target() -> None:
+    reset_inventory()
+    inventory[Items.Power] = 20
+    inventory[Items.Fertilizer] = 1
+    inventory[Items.Weird_Substance] = 5
+    top_hat.get_maze_substance_cost = lambda: 5
+    top_hat.can_run_cactus = lambda *args: True
+    cactus_calls = []
+    top_hat.farm_cactus_cycle = lambda *args: cactus_calls.append(args) or True
+
+    if top_hat.run_item_producer(Items.Weird_Substance, {}):
+        raise AssertionError("satisfied Weird Substance target reported production")
+
+    if cactus_calls:
+        raise AssertionError("cactus action continued after Weird Substance target")
+
+
+def test_gold_complete_does_not_request_weird_substance() -> None:
+    reset_inventory()
+    inventory[Items.Power] = 20
+    inventory[Items.Gold] = 10
+    inventory[Items.Fertilizer] = 1
+    top_hat.can_run_cactus = lambda *args: True
+    cactus_calls = []
+    top_hat.farm_cactus_cycle = lambda *args: cactus_calls.append(args) or True
+    top_hat.run_item_producer = REAL_RUN_ITEM_PRODUCER
+    top_hat.perform_next_action = REAL_PERFORM_NEXT_ACTION
+
+    cost = {Items.Gold: 10, Items.Cactus: 1}
+    top_hat.run_item_producer(Items.Cactus, cost)
+
+    if cactus_calls[0][5] != 0:
+        raise AssertionError("completed Gold stage requested Weird Substance")
+
+    cactus_calls.clear()
+    if top_hat.run_item_producer(Items.Weird_Substance, cost):
+        raise AssertionError("completed Gold stage produced Weird Substance")
+
+    if cactus_calls:
+        raise AssertionError("completed Gold stage invoked the cactus action")
+
+
 def test_power_boundary_uses_adaptive_target() -> None:
     reset_inventory()
     inventory[Items.Power] = 20
@@ -461,6 +534,9 @@ def main() -> None:
     test_gold_and_cactus_receive_live_policy()
     test_cactus_cycle_ignores_missing_final_cactus_balance()
     test_gold_plans_positive_weird_substance_target()
+    test_gold_resamples_after_weird_substance_production()
+    test_weird_substance_action_stops_at_immediate_target()
+    test_gold_complete_does_not_request_weird_substance()
     test_power_boundary_uses_adaptive_target()
     test_direct_dependency_cycle_stops_cleanly()
     test_multi_item_dependency_cycle_stops_cleanly()
