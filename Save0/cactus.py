@@ -1,5 +1,6 @@
 from farm_config import (
     CACTUS_SIZE,
+    CACTUS_REVERSE_SORT,
     CACTUS_START_X,
     CACTUS_START_Y,
     CACTUS_WATER_THRESHOLD,
@@ -7,6 +8,7 @@ from farm_config import (
 )
 from fertilizing import fertilize_before_harvest
 from navigation import distance_to, move_to
+from parallel_farming import dispatch_indexed_jobs
 from planting import ensure_soil
 from traversal import get_snake_positions
 from traversal import should_scan_forward as choose_scan_direction
@@ -111,10 +113,13 @@ def wait_for_cactuses(positions) -> bool:
     return True
 
 
-def sort_cactus_row(y: int) -> None:
+def sort_cactus_row(y: int, start_x=CACTUS_START_X, end_x=None, reverse=False) -> None:
     # Sort one row west to east with an early-terminating cocktail sort.
-    left_x = CACTUS_START_X
-    right_x = cactus_end_x()
+    if end_x == None:
+        end_x = cactus_end_x()
+
+    left_x = start_x
+    right_x = end_x
 
     while left_x < right_x:
         swapped = False
@@ -122,7 +127,9 @@ def sort_cactus_row(y: int) -> None:
         for x in range(left_x, right_x):
             move_to(x, y)
 
-            if measure() > measure(East):
+            if (not reverse and measure() > measure(East)) or (
+                reverse and measure() < measure(East)
+            ):
                 swap(East)
                 swapped = True
 
@@ -136,7 +143,9 @@ def sort_cactus_row(y: int) -> None:
         for x in range(right_x, left_x, -1):
             move_to(x, y)
 
-            if measure() < measure(West):
+            if (not reverse and measure() < measure(West)) or (
+                reverse and measure() > measure(West)
+            ):
                 swap(West)
                 swapped = True
 
@@ -146,16 +155,27 @@ def sort_cactus_row(y: int) -> None:
             return
 
 
-def sort_cactus_rows() -> None:
+def sort_cactus_rows(
+    start_x=CACTUS_START_X,
+    start_y=CACTUS_START_Y,
+    width=CACTUS_SIZE,
+    height=CACTUS_SIZE,
+    reverse=False,
+) -> None:
     # Sort every row west to east with adjacent swaps.
-    for y in range(CACTUS_START_Y, cactus_end_y() + 1):
-        sort_cactus_row(y)
+    end_x = start_x + width - 1
+
+    for y in range(start_y, start_y + height):
+        sort_cactus_row(y, start_x, end_x, reverse)
 
 
-def sort_cactus_column(x: int) -> None:
+def sort_cactus_column(x: int, start_y=CACTUS_START_Y, end_y=None, reverse=False) -> None:
     # Sort one column south to north with an early-terminating cocktail sort.
-    bottom_y = CACTUS_START_Y
-    top_y = cactus_end_y()
+    if end_y == None:
+        end_y = cactus_end_y()
+
+    bottom_y = start_y
+    top_y = end_y
 
     while bottom_y < top_y:
         swapped = False
@@ -163,7 +183,9 @@ def sort_cactus_column(x: int) -> None:
         for y in range(bottom_y, top_y):
             move_to(x, y)
 
-            if measure() > measure(North):
+            if (not reverse and measure() > measure(North)) or (
+                reverse and measure() < measure(North)
+            ):
                 swap(North)
                 swapped = True
 
@@ -177,7 +199,9 @@ def sort_cactus_column(x: int) -> None:
         for y in range(top_y, bottom_y, -1):
             move_to(x, y)
 
-            if measure() < measure(South):
+            if (not reverse and measure() < measure(South)) or (
+                reverse and measure() > measure(South)
+            ):
                 swap(South)
                 swapped = True
 
@@ -187,10 +211,18 @@ def sort_cactus_column(x: int) -> None:
             return
 
 
-def sort_cactus_columns() -> None:
+def sort_cactus_columns(
+    start_x=CACTUS_START_X,
+    start_y=CACTUS_START_Y,
+    width=CACTUS_SIZE,
+    height=CACTUS_SIZE,
+    reverse=False,
+) -> None:
     # Sort every column south to north with adjacent swaps.
-    for x in range(CACTUS_START_X, cactus_end_x() + 1):
-        sort_cactus_column(x)
+    end_y = start_y + height - 1
+
+    for x in range(start_x, start_x + width):
+        sort_cactus_column(x, start_y, end_y, reverse)
 
 
 def sort_cactuses() -> None:
@@ -199,20 +231,131 @@ def sort_cactuses() -> None:
     sort_cactus_columns()
 
 
-def farm_cactus_patch() -> None:
-    # Grow, sort, and bulk-harvest the cactus patch.
-    positions = get_cactus_positions()
+def grow_cactus_row_job(job) -> bool:
+    # Grow one explicit row in an arbitrary cactus region.
+    row_y, start_x, start_y, width, height, _ = job
+    pending = []
 
-    if not wait_for_cactuses(positions):
-        return False
-    sort_cactuses()
+    for x in range(start_x, start_x + width):
+        pending.append(x)
 
-    move_to(CACTUS_START_X, CACTUS_START_Y)
+    while len(pending) > 0:
+        if len(pending) == 1:
+            move_to(pending[0], row_y)
 
-    if can_harvest():
-        if FERTILIZE_CACTUS_HARVEST:
-            fertilize_before_harvest()
+            while True:
+                readiness = maintain_cactus_tile()
 
-        harvest()
+                if readiness == None:
+                    return False
+
+                if readiness:
+                    return True
+
+        still_pending = []
+
+        if distance_to(pending[0], row_y) <= distance_to(pending[-1], row_y):
+            for i in range(len(pending)):
+                x = pending[i]
+                move_to(x, row_y)
+                readiness = maintain_cactus_tile()
+
+                if readiness == None:
+                    return False
+
+                if not readiness:
+                    still_pending.append(x)
+        else:
+            for i in range(len(pending) - 1, -1, -1):
+                x = pending[i]
+                move_to(x, row_y)
+                readiness = maintain_cactus_tile()
+
+                if readiness == None:
+                    return False
+
+                if not readiness:
+                    still_pending = [x] + still_pending
+
+        pending = still_pending
 
     return True
+
+
+def sort_cactus_row_job(job) -> bool:
+    # Sort one explicit row in an arbitrary cactus region.
+    row_y, start_x, start_y, width, height, reverse = job
+    sort_cactus_row(row_y, start_x, start_x + width - 1, reverse)
+    return True
+
+
+def sort_cactus_column_job(job) -> bool:
+    # Sort one explicit column in an arbitrary cactus region.
+    column_x, start_x, start_y, width, height, reverse = job
+    sort_cactus_column(column_x, start_y, start_y + height - 1, reverse)
+    return True
+
+
+def harvest_cactus() -> bool:
+    # Fertilize and harvest the mature cactus at the current tile.
+    if not can_harvest():
+        return False
+
+    if FERTILIZE_CACTUS_HARVEST:
+        fertilize_before_harvest()
+
+    harvest()
+    return True
+
+
+def farm_cactus_cycle(
+    start_x=CACTUS_START_X,
+    start_y=CACTUS_START_Y,
+    width=CACTUS_SIZE,
+    height=CACTUS_SIZE,
+    reverse=False,
+) -> bool:
+    # Grow, sort, and bulk-harvest one explicit cactus region.
+    if width <= 0 or height <= 0:
+        return False
+
+    row_jobs = []
+    column_jobs = []
+
+    for row_y in range(start_y, start_y + height):
+        row_jobs.append((row_y, start_x, start_y, width, height, reverse))
+
+    for column_x in range(start_x, start_x + width):
+        column_jobs.append((column_x, start_x, start_y, width, height, reverse))
+
+    growth_results = dispatch_indexed_jobs(row_jobs, grow_cactus_row_job)
+
+    for result in growth_results:
+        if not result:
+            return False
+
+    row_results = dispatch_indexed_jobs(row_jobs, sort_cactus_row_job)
+
+    for result in row_results:
+        if not result:
+            return False
+
+    column_results = dispatch_indexed_jobs(column_jobs, sort_cactus_column_job)
+
+    for result in column_results:
+        if not result:
+            return False
+
+    move_to(start_x, start_y)
+    return harvest_cactus()
+
+
+def farm_cactus_patch() -> bool:
+    # Grow, sort, and bulk-harvest the cactus patch.
+    return farm_cactus_cycle(
+        CACTUS_START_X,
+        CACTUS_START_Y,
+        CACTUS_SIZE,
+        CACTUS_SIZE,
+        CACTUS_REVERSE_SORT,
+    )

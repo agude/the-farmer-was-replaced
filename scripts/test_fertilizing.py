@@ -199,6 +199,13 @@ def install_cactus_stubs() -> None:
     cactus.can_harvest = crop_is_ready
     cactus.harvest = record_harvest
 
+    def record_cactus_cycle(*args):
+        record_wait()
+        record_sort()
+        return cactus.harvest_cactus()
+
+    cactus.farm_cactus_cycle = record_cactus_cycle
+
 
 def test_cactus_harvest_scope_and_limit() -> None:
     install_cactus_stubs()

@@ -81,7 +81,11 @@ tree-test:
 pumpkin-test:
     uv run scripts/test_pumpkins.py
 
-check: lint cactus-test farm-layout-test sunflower-test maze-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test hay-test carrot-test tree-test pumpkin-test
+# Run the CPython bounded cactus-cycle harness.
+cactus-cycle-test:
+    uv run scripts/test_cactus_cycle.py
+
+check: lint cactus-test farm-layout-test sunflower-test maze-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test hay-test carrot-test tree-test pumpkin-test cactus-cycle-test
 
 hooks-install:
     ln -sf ../../bin/pre-commit.sh .git/hooks/pre-commit
