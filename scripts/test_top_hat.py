@@ -49,6 +49,9 @@ top_hat.Unlocks = Unlocks
 REAL_PERFORM_NEXT_ACTION = top_hat.perform_next_action
 REAL_RUN_ITEM_PRODUCER = top_hat.run_item_producer
 REAL_CAN_RUN_CACTUS = top_hat.can_run_cactus
+REAL_CAN_RUN_SUNFLOWERS = top_hat.can_run_sunflowers
+REAL_GET_ENTITY_CYCLE_BUDGET = top_hat.get_entity_cycle_budget
+REAL_GET_TREE_CYCLE_BUDGET = top_hat.get_tree_cycle_budget
 inventory = {}
 messages = []
 unlock_calls = []
@@ -576,6 +579,241 @@ def test_blocked_dependency_allows_unrelated_resource_work() -> None:
         raise AssertionError("planner did not fall back from the blocked dependency")
 
 
+class PlannerSimulation:
+    def __init__(self) -> None:
+        self.inventory = {
+            Items.Hay: 0,
+            Items.Wood: 0,
+            Items.Carrot: 0,
+            Items.Pumpkin: 0,
+            Items.Cactus: 0,
+            Items.Power: 5,
+            Items.Weird_Substance: 0,
+            Items.Gold: 0,
+            Items.Fertilizer: 0,
+        }
+        self.top_hat_cost = {
+            Items.Power: 30,
+            Items.Cactus: 2,
+            Items.Gold: 8,
+            Items.Carrot: 3,
+            Items.Wood: 2,
+            Items.Hay: 4,
+        }
+        self.entity_costs = {
+            Entities.Carrot: {Items.Hay: 1},
+            Entities.Pumpkin: {Items.Carrot: 1},
+            Entities.Cactus: {Items.Pumpkin: 1},
+            Entities.Sunflower: {Items.Carrot: 1},
+            Entities.Tree: {Items.Hay: 1},
+            Entities.Bush: {Items.Hay: 1},
+        }
+        self.actions = []
+        self.messages = []
+        self.unlock_calls = 0
+        self.wait_count = 0
+        self.protection_checks = 0
+        self.unlocked = False
+
+    def install(self) -> None:
+        resource_costs.Items = Items
+        resource_costs.Unlocks = Unlocks
+        top_hat.num_items = self.num_items
+        resource_costs.num_items = self.num_items
+        resource_costs.get_cost = self.get_cost
+        resource_costs.quick_print = self.record_message
+        top_hat.quick_print = self.record_message
+        top_hat.get_world_size = lambda: 2
+        top_hat.get_maze_substance_cost = lambda: 8
+        top_hat.get_top_hat_cost = resource_costs.get_top_hat_cost
+        top_hat.get_planting_budget = resource_costs.get_planting_budget
+        top_hat.can_run_cactus = REAL_CAN_RUN_CACTUS
+        top_hat.can_run_sunflowers = REAL_CAN_RUN_SUNFLOWERS
+        top_hat.get_entity_cycle_budget = REAL_GET_ENTITY_CYCLE_BUDGET
+        top_hat.get_tree_cycle_budget = REAL_GET_TREE_CYCLE_BUDGET
+        top_hat.num_unlocked = self.num_unlocked
+        top_hat.unlock = self.unlock
+        top_hat.do_a_flip = self.advance_time
+        top_hat.farm_hay_cycle = self.farm_hay_cycle
+        top_hat.farm_carrot_cycle = self.farm_carrot_cycle
+        top_hat.farm_pumpkin_cycle = self.farm_pumpkin_cycle
+        top_hat.farm_cactus_cycle = self.farm_cactus_cycle
+        top_hat.farm_sunflower_cycle = self.farm_sunflower_cycle
+        top_hat.farm_tree_cycle = self.farm_tree_cycle
+        top_hat.farm_mazes = self.farm_mazes
+        top_hat.POWER_LOW_WATERMARK = 10
+        top_hat.POWER_HIGH_WATERMARK = 20
+        top_hat.POWER_OBSERVED_CONSUMPTION = 0
+        top_hat.run_item_producer = REAL_RUN_ITEM_PRODUCER
+        top_hat.perform_next_action = REAL_PERFORM_NEXT_ACTION
+
+    def num_items(self, item):
+        return self.inventory[item]
+
+    def get_cost(self, target):
+        if target == Unlocks.Top_Hat:
+            return self.top_hat_cost
+
+        return self.entity_costs.get(target)
+
+    def num_unlocked(self, unlock) -> int:
+        if unlock == Unlocks.Top_Hat and self.unlocked:
+            return 1
+
+        return 0
+
+    def record_message(self, message) -> None:
+        self.messages.append(message)
+
+    def record_action(self, action) -> None:
+        self.actions.append(action)
+
+    def check_protected(self, stage) -> None:
+        protected = top_hat.get_protected_inventory(self.top_hat_cost, stage)
+        self.protection_checks += 1
+
+        for item in protected:
+            if self.inventory[item] < protected[item]:
+                raise AssertionError("protected balance was consumed for " + str(item))
+
+    def advance_time(self) -> None:
+        self.record_action("wait")
+        self.wait_count += 1
+
+        if self.wait_count == 2:
+            self.inventory[Items.Fertilizer] = 1
+
+    def farm_hay_cycle(self) -> bool:
+        self.record_action("hay")
+        self.inventory[Items.Hay] += 4
+        self.check_protected(Items.Hay)
+        return True
+
+    def farm_carrot_cycle(self) -> bool:
+        if self.inventory[Items.Hay] < 4:
+            return False
+
+        self.record_action("carrot")
+        self.inventory[Items.Hay] -= 4
+        self.check_protected(Items.Carrot)
+        self.inventory[Items.Carrot] += 4
+        return True
+
+    def farm_pumpkin_cycle(self) -> bool:
+        if self.inventory[Items.Carrot] < 4:
+            return False
+
+        self.record_action("pumpkin")
+        self.inventory[Items.Carrot] -= 4
+        self.inventory[Items.Pumpkin] += 4
+        return True
+
+    def farm_cactus_cycle(self, *args) -> bool:
+        if self.inventory[Items.Pumpkin] < 4:
+            return False
+
+        self.record_action("cactus")
+        self.inventory[Items.Pumpkin] -= 4
+        self.check_protected(Items.Gold)
+        self.inventory[Items.Cactus] += 4
+
+        weird_target = args[5]
+        if (
+            self.inventory[Items.Fertilizer] > 0
+            and self.inventory[Items.Weird_Substance] < weird_target
+        ):
+            self.inventory[Items.Fertilizer] -= 1
+            self.inventory[Items.Weird_Substance] += 8
+
+        return True
+
+    def farm_sunflower_cycle(self) -> bool:
+        if self.inventory[Items.Carrot] < 4:
+            return False
+
+        self.record_action("power")
+        self.inventory[Items.Carrot] -= 4
+        self.inventory[Items.Power] += 16
+        return True
+
+    def farm_tree_cycle(self) -> bool:
+        if self.inventory[Items.Hay] < 4:
+            return False
+
+        self.record_action("wood")
+        self.inventory[Items.Hay] -= 4
+        self.check_protected(Items.Wood)
+        self.inventory[Items.Wood] += 4
+        return True
+
+    def farm_mazes(self, gold_target, substance_reserve) -> bool:
+        if self.inventory[Items.Weird_Substance] < 8 + substance_reserve:
+            return False
+
+        self.record_action("maze")
+        self.inventory[Items.Weird_Substance] -= 8
+        self.inventory[Items.Gold] += 8
+        return True
+
+    def unlock(self, unlock) -> bool:
+        self.unlock_calls += 1
+
+        if not top_hat.can_afford_cost(self.top_hat_cost):
+            return False
+
+        self.record_action("unlock")
+        self.unlocked = True
+        return True
+
+
+def test_realistic_planner_simulation() -> None:
+    simulator = PlannerSimulation()
+    simulator.install()
+
+    if not top_hat.farm_top_hat():
+        raise AssertionError("realistic planner simulation did not unlock")
+
+    if len(simulator.actions) > 40:
+        raise AssertionError("planner exceeded its bounded simulation action limit")
+    if simulator.unlock_calls != 1 or simulator.actions[-1] != "unlock":
+        raise AssertionError("simulation unlocked with an invalid action sequence")
+
+    for required_action in (
+        "power",
+        "cactus",
+        "wait",
+        "maze",
+        "carrot",
+        "wood",
+        "hay",
+    ):
+        if required_action not in simulator.actions:
+            raise AssertionError("simulation omitted " + required_action + " work")
+
+    for item in simulator.top_hat_cost:
+        if simulator.inventory[item] < simulator.top_hat_cost[item]:
+            raise AssertionError("simulation ended below the Top Hat cost")
+
+    if simulator.protection_checks == 0:
+        raise AssertionError("simulation did not evaluate protected balances")
+
+
+def test_missing_producer_stops_within_action_limit() -> None:
+    simulator = PlannerSimulation()
+    simulator.install()
+    top_hat.farm_cactus_cycle = lambda *args: False
+
+    if top_hat.farm_top_hat():
+        raise AssertionError("planner succeeded after removing a required producer")
+
+    if simulator.unlock_calls != 0:
+        raise AssertionError("planner attempted unlock after producer failure")
+    if len(simulator.actions) > 40:
+        raise AssertionError("missing producer was not stopped by the bounded planner")
+    if not any("failed" in message.lower() for message in simulator.messages):
+        raise AssertionError("missing producer failure was not reported")
+
+
 def main() -> None:
     test_already_unlocked_returns_immediately()
     test_empty_cost_stops_visibly()
@@ -601,6 +839,8 @@ def main() -> None:
     test_direct_dependency_cycle_stops_cleanly()
     test_multi_item_dependency_cycle_stops_cleanly()
     test_blocked_dependency_allows_unrelated_resource_work()
+    test_realistic_planner_simulation()
+    test_missing_producer_stops_within_action_limit()
     print("Passed Top Hat planner policy, live-cost, safeguard, and routing tests")
 
 
