@@ -65,7 +65,11 @@ traversal-test:
 planting-test:
     uv run scripts/test_planting.py
 
-check: lint cactus-test farm-layout-test sunflower-test maze-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test
+# Run the CPython bounded hay harness.
+hay-test:
+    uv run scripts/test_hay.py
+
+check: lint cactus-test farm-layout-test sunflower-test maze-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test hay-test
 
 hooks-install:
     ln -sf ../../bin/pre-commit.sh .git/hooks/pre-commit
