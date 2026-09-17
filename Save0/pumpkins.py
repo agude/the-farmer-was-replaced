@@ -7,6 +7,7 @@ from farm_config import (
 )
 from fertilizing import fertilize_before_harvest
 from navigation import distance_to, move_to
+from parallel_farming import dispatch_indexed_jobs
 from planting import ensure_soil
 from traversal import get_snake_positions
 from traversal import should_scan_forward as choose_scan_direction
@@ -183,4 +184,83 @@ def farm_pumpkin_patch() -> None:
 
     harvest()
 
+    return True
+
+
+def grow_pumpkin_row_until_ready(row_y: int) -> bool:
+    # Grow one full-world row and return after every tile is mature.
+    size = get_world_size()
+    pending = []
+
+    for x in range(size):
+        pending.append(x)
+
+    while len(pending) > 0:
+        if len(pending) == 1:
+            move_to(pending[0], row_y)
+
+            while True:
+                readiness = pumpkin_is_ready()
+
+                if readiness == None:
+                    return False
+
+                if readiness:
+                    return True
+
+        still_pending = []
+
+        if distance_to(pending[0], row_y) <= distance_to(pending[-1], row_y):
+            for i in range(len(pending)):
+                x = pending[i]
+                move_to(x, row_y)
+
+                readiness = pumpkin_is_ready()
+
+                if readiness == None:
+                    return False
+
+                if not readiness:
+                    still_pending.append(x)
+        else:
+            for i in range(len(pending) - 1, -1, -1):
+                x = pending[i]
+                move_to(x, row_y)
+
+                readiness = pumpkin_is_ready()
+
+                if readiness == None:
+                    return False
+
+                if not readiness:
+                    still_pending = [x] + still_pending
+
+        pending = still_pending
+
+    return True
+
+
+def farm_pumpkin_cycle() -> bool:
+    # Grow the full world before one bulk harvest.
+    size = get_world_size()
+    rows = []
+
+    for row_y in range(size):
+        rows.append(row_y)
+
+    results = dispatch_indexed_jobs(rows, grow_pumpkin_row_until_ready)
+
+    for result in results:
+        if not result:
+            return False
+
+    move_to(size - 1, size - 1)
+
+    if not can_harvest():
+        return False
+
+    if FERTILIZE_PUMPKIN_HARVEST:
+        fertilize_before_harvest()
+
+    harvest()
     return True
