@@ -305,6 +305,8 @@ def main() -> None:
     test_no_progress_stops_after_repeated_action()
     test_unlock_failure_is_called_once()
     test_policy_priority()
+    test_power_reaches_high_watermark_without_live_power_cost()
+    test_tree_budget_counts_checkerboard_tiles()
     test_protected_balance_plus_cycle_budget()
     test_missing_fertilizer_reports_wait()
     test_gold_and_cactus_receive_live_policy()
