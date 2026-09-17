@@ -95,24 +95,24 @@ def test_policy_thresholds() -> None:
     reset_state()
     fertilizing.ENABLE_WEIRD_SUBSTANCE_PRODUCTION = False
 
-    if fertilizing.fertilize_before_harvest():
+    if fertilizing.fertilize_before_harvest(1000, 0, False):
         raise AssertionError("disabled production unexpectedly fertilized")
     assert_no_fertilizer("disabled production")
 
     reset_state(weird_substance=1000)
-    if fertilizing.fertilize_before_harvest():
+    if fertilizing.fertilize_before_harvest(1000, 0, True):
         raise AssertionError("target inventory unexpectedly fertilized")
     assert_no_fertilizer("target inventory")
 
     reset_state(fertilizer=2)
     fertilizing.FERTILIZER_RESERVE = 2
-    if fertilizing.fertilize_before_harvest():
+    if fertilizing.fertilize_before_harvest(1000, 2, True):
         raise AssertionError("reserve inventory unexpectedly fertilized")
     assert_no_fertilizer("reserve inventory")
 
     reset_state(fertilizer=1)
     fertilizing.FERTILIZER_RESERVE = 2
-    if fertilizing.fertilize_before_harvest():
+    if fertilizing.fertilize_before_harvest(1000, 2, True):
         raise AssertionError("below-reserve inventory unexpectedly fertilized")
     assert_no_fertilizer("below-reserve inventory")
 
@@ -120,7 +120,7 @@ def test_policy_thresholds() -> None:
 def test_policy_uses_one_fertilizer_below_target() -> None:
     reset_state(fertilizer=3)
 
-    if not fertilizing.fertilize_before_harvest():
+    if not fertilizing.fertilize_before_harvest(1000, 0, True):
         raise AssertionError("fertilizer was not used below target")
 
     if fertilizer_uses() != 1:

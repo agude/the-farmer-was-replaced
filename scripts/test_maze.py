@@ -209,8 +209,7 @@ class FarmSimulator:
 
 
 def configure_maze_mode() -> None:
-    maze.GOLD_TARGET = 128
-    maze.WEIRD_SUBSTANCE_RESERVE = 0
+    pass
 
 
 def test_cost_and_repeated_fresh_mazes() -> None:
@@ -221,7 +220,7 @@ def test_cost_and_repeated_fresh_mazes() -> None:
     if maze.get_maze_substance_cost() != 16:
         raise AssertionError("maze cost did not apply the upgrade exponent")
 
-    maze.farm_mazes()
+    maze.farm_mazes(128, 0)
 
     if simulator.clear_calls != 1:
         raise AssertionError("fresh maze farming did not clear exactly once")
@@ -246,22 +245,21 @@ def test_unlock_and_inventory_safeguards() -> None:
 
     if maze.get_maze_substance_cost() != 0:
         raise AssertionError("locked maze level produced a substance cost")
-    maze.farm_mazes()
+    maze.farm_mazes(128, 0)
 
     if locked.events:
         raise AssertionError(f"locked maze mode performed actions: {locked.events}")
 
     insufficient = FarmSimulator(weird_substance=15)
     insufficient.install()
-    maze.farm_mazes()
+    maze.farm_mazes(128, 0)
 
     if insufficient.events:
         raise AssertionError(f"insufficient inventory did not stop cleanly: {insufficient.events}")
 
     reserved = FarmSimulator(weird_substance=16)
     reserved.install()
-    maze.WEIRD_SUBSTANCE_RESERVE = 1
-    maze.farm_mazes()
+    maze.farm_mazes(128, 1)
 
     if reserved.events:
         raise AssertionError("maze mode spent the configured substance reserve")
@@ -272,14 +270,14 @@ def test_creation_checks_action_results() -> None:
 
     failed_plant = FarmSimulator(plant_result=False)
     failed_plant.install()
-    maze.farm_mazes()
+    maze.farm_mazes(128, 0)
 
     if failed_plant.use_item_calls or failed_plant.solve_calls:
         raise AssertionError("maze mode continued after plant failure")
 
     failed_use = FarmSimulator(use_item_result=False)
     failed_use.install()
-    maze.farm_mazes()
+    maze.farm_mazes(128, 0)
 
     if failed_use.solve_calls:
         raise AssertionError("maze mode continued after substance-use failure")
@@ -289,7 +287,7 @@ def test_gold_target_skips_farm() -> None:
     configure_maze_mode()
     simulator = FarmSimulator(gold=128)
     simulator.install()
-    maze.farm_mazes()
+    maze.farm_mazes(128, 0)
 
     if simulator.events:
         raise AssertionError("gold target did not skip maze farming")

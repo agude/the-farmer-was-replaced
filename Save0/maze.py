@@ -1,4 +1,5 @@
-from farm_config import GOLD_TARGET, WEIRD_SUBSTANCE_RESERVE
+from farm_config import GOLD_TARGET as DEFAULT_GOLD_TARGET
+from farm_config import WEIRD_SUBSTANCE_RESERVE as DEFAULT_WEIRD_SUBSTANCE_RESERVE
 
 
 def get_maze_substance_cost() -> int:
@@ -12,9 +13,9 @@ def get_maze_substance_cost() -> int:
     return world_size * 2 ** (maze_level - 1)
 
 
-def can_fund_maze(substance_cost: int) -> bool:
-    # Keep the configured Weird Substance reserve untouched.
-    return num_items(Items.Weird_Substance) >= (substance_cost + WEIRD_SUBSTANCE_RESERVE)
+def can_fund_maze(substance_cost: int, substance_reserve: int) -> bool:
+    # Keep the caller's Weird Substance reserve untouched.
+    return num_items(Items.Weird_Substance) >= (substance_cost + substance_reserve)
 
 
 def create_maze(substance_cost: int) -> bool:
@@ -63,27 +64,35 @@ def solve_maze() -> bool:
     return True
 
 
-def farm_mazes() -> None:
-    # Create fresh mazes until the gold target or resource reserve is reached.
-    if num_items(Items.Gold) >= GOLD_TARGET:
-        return
+def farm_mazes(gold_target=None, substance_reserve=None) -> bool:
+    # Create fresh mazes until the caller's target or reserve is reached.
+    if gold_target == None:
+        gold_target = DEFAULT_GOLD_TARGET
+
+    if substance_reserve == None:
+        substance_reserve = DEFAULT_WEIRD_SUBSTANCE_RESERVE
+
+    if num_items(Items.Gold) >= gold_target:
+        return True
 
     substance_cost = get_maze_substance_cost()
 
     if substance_cost == 0:
-        return
+        return False
 
-    if not can_fund_maze(substance_cost):
-        return
+    if not can_fund_maze(substance_cost, substance_reserve):
+        return False
 
     clear()
 
-    while num_items(Items.Gold) < GOLD_TARGET:
-        if not can_fund_maze(substance_cost):
-            return
+    while num_items(Items.Gold) < gold_target:
+        if not can_fund_maze(substance_cost, substance_reserve):
+            return False
 
         if not create_maze(substance_cost):
-            return
+            return False
 
         if not solve_maze():
-            return
+            return False
+
+    return True
