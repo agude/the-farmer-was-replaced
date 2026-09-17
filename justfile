@@ -89,7 +89,11 @@ cactus-cycle-test:
 sunflower-cycle-test:
     uv run scripts/test_sunflower_cycle.py
 
-check: lint cactus-test farm-layout-test sunflower-test maze-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test hay-test carrot-test tree-test pumpkin-test cactus-cycle-test sunflower-cycle-test
+# Run the CPython live resource-cost harness.
+resource-cost-test:
+    uv run scripts/test_resource_costs.py
+
+check: lint cactus-test farm-layout-test sunflower-test maze-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test hay-test carrot-test tree-test pumpkin-test cactus-cycle-test sunflower-cycle-test resource-cost-test
 
 hooks-install:
     ln -sf ../../bin/pre-commit.sh .git/hooks/pre-commit
