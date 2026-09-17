@@ -53,7 +53,11 @@ regular-farming-test:
 fertilizing-test:
     uv run scripts/test_fertilizing.py
 
-check: lint cactus-test farm-layout-test sunflower-test maze-test dinosaur-test regular-farming-test fertilizing-test
+# Run the CPython indexed-drone dispatch harness.
+parallel-farming-test:
+    uv run scripts/test_parallel_farming.py
+
+check: lint cactus-test farm-layout-test sunflower-test maze-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test
 
 hooks-install:
     ln -sf ../../bin/pre-commit.sh .git/hooks/pre-commit
