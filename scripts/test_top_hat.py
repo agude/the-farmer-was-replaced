@@ -413,6 +413,39 @@ def test_direct_dependency_cycle_stops_cleanly() -> None:
         raise AssertionError("direct dependency cycle was not reported")
 
 
+def test_multi_item_dependency_cycle_stops_cleanly() -> None:
+    reset_inventory()
+    top_hat.run_item_producer = REAL_RUN_ITEM_PRODUCER
+    top_hat.get_entity_cycle_budget = lambda entity, width, height: {Items.Wood: 1}
+    top_hat.get_tree_cycle_budget = lambda width, height: {Items.Carrot: 1}
+
+    if top_hat.run_item_producer(Items.Carrot, {Items.Hay: 1}):
+        raise AssertionError("multi-item dependency cycle reported progress")
+
+    if "cycle" not in messages[-1].lower():
+        raise AssertionError("multi-item dependency cycle was not reported")
+
+
+def test_blocked_dependency_allows_unrelated_resource_work() -> None:
+    reset_inventory()
+    inventory[Items.Power] = 20
+    actions = []
+
+    def produce(item, policy) -> bool:
+        actions.append(item)
+        return item == Items.Wood
+
+    top_hat.run_item_producer = produce
+    cost = {Items.Cactus: 1, Items.Wood: 1}
+    top_hat.perform_next_action = REAL_PERFORM_NEXT_ACTION
+
+    if not top_hat.perform_next_action(cost):
+        raise AssertionError("unrelated resource work did not make progress")
+
+    if actions != [Items.Cactus, Items.Wood]:
+        raise AssertionError("planner did not fall back from the blocked dependency")
+
+
 def main() -> None:
     test_already_unlocked_returns_immediately()
     test_empty_cost_stops_visibly()
@@ -430,6 +463,8 @@ def main() -> None:
     test_gold_plans_positive_weird_substance_target()
     test_power_boundary_uses_adaptive_target()
     test_direct_dependency_cycle_stops_cleanly()
+    test_multi_item_dependency_cycle_stops_cleanly()
+    test_blocked_dependency_allows_unrelated_resource_work()
     print("Passed Top Hat planner policy, live-cost, safeguard, and routing tests")
 
 

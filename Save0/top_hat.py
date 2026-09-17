@@ -239,117 +239,194 @@ def run_cactus_action(cost, size) -> bool:
     )
 
 
-def run_item_producer(item, cost, blocked_item=None, stage=None) -> bool:
-    # Produce one missing resource, recursively funding its next input.
-    if item == blocked_item:
-        quick_print("Top Hat producer dependency cycle")
-        return False
+def make_producer_result(succeeded, reason):
+    # Keep failure details separate from the public boolean producer contract.
+    return (succeeded, reason)
+
+
+def has_dependency(dependency_path, item) -> bool:
+    for path_item in dependency_path:
+        if path_item == item:
+            return True
+
+    return False
+
+
+def extend_dependency_path(dependency_path, item):
+    extended_path = []
+
+    for path_item in dependency_path:
+        extended_path.append(path_item)
+
+    extended_path.append(item)
+    return extended_path
+
+
+def get_operation_result(item, succeeded):
+    if succeeded:
+        return make_producer_result(True, "")
+
+    return make_producer_result(
+        False,
+        "producer operation failed for " + str(item),
+    )
+
+
+def resolve_item_producer(item, cost, stage, dependency_path):
+    # Resolve one finite production action while tracking the full path.
+    if has_dependency(dependency_path, item):
+        return make_producer_result(
+            False,
+            "dependency cycle at " + str(item),
+        )
 
     if stage == None:
         stage = item
 
+    path = extend_dependency_path(dependency_path, item)
     size = get_world_size()
 
     if item == Items.Hay:
-        return farm_hay_cycle()
+        return get_operation_result(item, farm_hay_cycle())
 
     if item == Items.Wood:
         if can_run_trees(cost, size, stage):
-            return farm_tree_cycle()
+            return get_operation_result(item, farm_tree_cycle())
 
         budget = get_tree_cycle_budget(size, size)
         protected_inventory = get_protected_inventory(cost, stage)
         missing_item = get_missing_input(budget, protected_inventory)
         if missing_item == None:
-            quick_print("Wood cycle is not affordable")
-            return False
+            return make_producer_result(
+                False,
+                "unavailable feedstock for " + str(item),
+            )
 
-        return run_item_producer(missing_item, cost, item, stage)
+        return resolve_item_producer(missing_item, cost, stage, path)
 
     if item == Items.Carrot:
         if can_run_carrots(cost, size, stage):
-            return farm_carrot_cycle()
+            return get_operation_result(item, farm_carrot_cycle())
 
         budget = get_entity_cycle_budget(Entities.Carrot, size, size)
         protected_inventory = get_protected_inventory(cost, stage)
         missing_item = get_missing_input(budget, protected_inventory)
         if missing_item == None:
-            quick_print("Carrot cycle is not affordable")
-            return False
+            return make_producer_result(
+                False,
+                "unavailable feedstock for " + str(item),
+            )
 
-        return run_item_producer(missing_item, cost, item, stage)
+        return resolve_item_producer(missing_item, cost, stage, path)
 
     if item == Items.Pumpkin:
         if can_run_pumpkins(cost, size, stage):
-            return farm_pumpkin_cycle()
+            return get_operation_result(item, farm_pumpkin_cycle())
 
         budget = get_entity_cycle_budget(Entities.Pumpkin, size, size)
         protected_inventory = get_protected_inventory(cost, stage)
         missing_item = get_missing_input(budget, protected_inventory)
         if missing_item == None:
-            quick_print("Pumpkin cycle is not affordable")
-            return False
+            return make_producer_result(
+                False,
+                "unavailable feedstock for " + str(item),
+            )
 
-        return run_item_producer(missing_item, cost, item, stage)
+        return resolve_item_producer(missing_item, cost, stage, path)
 
     if item == Items.Cactus:
         if can_run_cactus(cost, size, stage):
-            return run_cactus_action(cost, size)
+            return get_operation_result(item, run_cactus_action(cost, size))
 
         budget = get_entity_cycle_budget(Entities.Cactus, size, size)
         protected_inventory = get_protected_inventory(cost, stage)
         missing_item = get_missing_input(budget, protected_inventory)
         if missing_item == None:
-            quick_print("Cactus cycle is not affordable")
-            return False
+            return make_producer_result(
+                False,
+                "unavailable feedstock for " + str(item),
+            )
 
-        return run_item_producer(missing_item, cost, item, stage)
+        return resolve_item_producer(missing_item, cost, stage, path)
 
     if item == Items.Power:
         if can_run_sunflowers(cost, size, stage):
-            return farm_sunflower_cycle()
+            return get_operation_result(item, farm_sunflower_cycle())
 
         budget = get_entity_cycle_budget(Entities.Sunflower, size, size)
         protected_inventory = get_protected_inventory(cost, stage)
         missing_item = get_missing_input(budget, protected_inventory)
         if missing_item == None:
-            quick_print("Power cycle is not affordable")
-            return False
+            return make_producer_result(
+                False,
+                "unavailable feedstock for " + str(item),
+            )
 
-        return run_item_producer(missing_item, cost, item, stage)
+        return resolve_item_producer(missing_item, cost, stage, path)
 
     if item == Items.Weird_Substance:
         if num_items(Items.Fertilizer) <= 0:
-            quick_print("Missing fertilizer for Weird Substance")
-            return False
+            return make_producer_result(
+                False,
+                "missing fertilizer for Weird Substance",
+            )
 
         if can_run_cactus(cost, size, stage):
-            return run_cactus_action(cost, size)
+            return get_operation_result(item, run_cactus_action(cost, size))
 
         budget = get_entity_cycle_budget(Entities.Cactus, size, size)
         protected_inventory = get_protected_inventory(cost, stage)
         missing_item = get_missing_input(budget, protected_inventory)
         if missing_item == None:
-            quick_print("Weird Substance cycle is not affordable")
-            return False
+            return make_producer_result(
+                False,
+                "unavailable feedstock for " + str(item),
+            )
 
-        return run_item_producer(missing_item, cost, item, stage)
+        return resolve_item_producer(missing_item, cost, stage, path)
 
     if item == Items.Gold:
         if can_run_maze(cost):
-            return farm_mazes(
-                get_cost_amount(cost, Items.Gold),
-                get_cost_amount(cost, Items.Weird_Substance),
+            return get_operation_result(
+                item,
+                farm_mazes(
+                    get_cost_amount(cost, Items.Gold),
+                    get_cost_amount(cost, Items.Weird_Substance),
+                ),
             )
 
         if num_items(Items.Fertilizer) > 0:
-            return run_item_producer(Items.Weird_Substance, cost, item, stage)
+            return resolve_item_producer(
+                Items.Weird_Substance,
+                cost,
+                stage,
+                path,
+            )
 
-        quick_print("Gold cycle is waiting for Weird Substance")
-        return False
+        return make_producer_result(
+            False,
+            "missing fertilizer for Gold dependency",
+        )
 
-    quick_print("No Top Hat producer for required item")
-    return False
+    return make_producer_result(
+        False,
+        "no producer for required item " + str(item),
+    )
+
+
+def run_item_producer(item, cost, blocked_item=None, stage=None) -> bool:
+    # Preserve the boolean API while reporting structured resolver failures.
+    dependency_path = []
+
+    if blocked_item != None:
+        dependency_path.append(blocked_item)
+
+    result = resolve_item_producer(item, cost, stage, dependency_path)
+
+    if not result[0]:
+        quick_print("Top Hat producer blocked: " + result[1])
+
+    return result[0]
 
 
 def run_selected_producer(item, cost) -> bool:
@@ -362,24 +439,45 @@ def run_selected_producer(item, cost) -> bool:
     return result
 
 
+def run_fallback_action(cost, blocked_item) -> bool:
+    # Keep useful independent work moving after a blocked dependency.
+    fallback_items = [Items.Wood, Items.Hay, Items.Carrot]
+
+    for item in fallback_items:
+        if item == blocked_item or not needs_item(cost, item):
+            continue
+
+        if run_selected_producer(item, cost):
+            return True
+
+    return False
+
+
+def run_required_action(item, cost) -> bool:
+    if run_selected_producer(item, cost):
+        return True
+
+    return run_fallback_action(cost, item)
+
+
 def perform_next_action(cost) -> bool:
     # Select one bounded action using current protected balances.
     power_target = get_power_target(cost)
 
     if num_items(Items.Power) < get_power_low_watermark():
-        return run_selected_producer(Items.Power, cost)
+        return run_required_action(Items.Power, cost)
 
     if num_items(Items.Power) < power_target:
-        return run_selected_producer(Items.Power, cost)
+        return run_required_action(Items.Power, cost)
 
     if needs_item(cost, Items.Cactus) or needs_item(cost, Items.Weird_Substance):
         if needs_item(cost, Items.Cactus):
-            return run_selected_producer(Items.Cactus, cost)
+            return run_required_action(Items.Cactus, cost)
 
-        return run_selected_producer(Items.Weird_Substance, cost)
+        return run_required_action(Items.Weird_Substance, cost)
 
     if needs_item(cost, Items.Gold):
-        return run_selected_producer(Items.Gold, cost)
+        return run_required_action(Items.Gold, cost)
 
     if (
         is_power_stockpile_complete(cost)
@@ -387,13 +485,13 @@ def perform_next_action(cost) -> bool:
         and not needs_item(cost, Items.Gold)
         and needs_item(cost, Items.Carrot)
     ):
-        return run_selected_producer(Items.Carrot, cost)
+        return run_required_action(Items.Carrot, cost)
 
     if needs_item(cost, Items.Wood):
-        return run_selected_producer(Items.Wood, cost)
+        return run_required_action(Items.Wood, cost)
 
     if needs_item(cost, Items.Hay):
-        return run_selected_producer(Items.Hay, cost)
+        return run_required_action(Items.Hay, cost)
 
     quick_print("Top Hat planner has no selected action")
     return False
