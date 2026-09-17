@@ -84,15 +84,23 @@ def farm_mazes(gold_target=None, substance_reserve=None) -> bool:
         return False
 
     clear()
+    completed_maze = False
 
     while num_items(Items.Gold) < gold_target:
+        substance_cost = get_maze_substance_cost()
+
+        if substance_cost == 0:
+            return completed_maze
+
         if not can_fund_maze(substance_cost, substance_reserve):
-            return False
+            return completed_maze
 
         if not create_maze(substance_cost):
             return False
 
         if not solve_maze():
             return False
+
+        completed_maze = True
 
     return True

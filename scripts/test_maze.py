@@ -293,12 +293,27 @@ def test_gold_target_skips_farm() -> None:
         raise AssertionError("gold target did not skip maze farming")
 
 
+def test_partial_batch_reports_maze_progress() -> None:
+    configure_maze_mode()
+    simulator = FarmSimulator(weird_substance=16)
+    simulator.install()
+
+    if not maze.farm_mazes(128, 0):
+        raise AssertionError("completed maze was reported as no progress")
+
+    if simulator.solve_calls != 1:
+        raise AssertionError("maze batch did not stop after substance exhaustion")
+    if simulator.inventory[Items.Gold] != 64:
+        raise AssertionError("partial maze progress was not retained")
+
+
 def main() -> None:
     test_right_hand_solver()
     test_cost_and_repeated_fresh_mazes()
     test_unlock_and_inventory_safeguards()
     test_creation_checks_action_results()
     test_gold_target_skips_farm()
+    test_partial_batch_reports_maze_progress()
     print("Passed maze wall-following, cost, safeguards, and stopping tests")
 
 
