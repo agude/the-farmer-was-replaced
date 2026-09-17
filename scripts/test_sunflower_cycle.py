@@ -189,15 +189,15 @@ def test_failed_row_stops_before_harvest() -> None:
         raise AssertionError("failed measurement cycle returned before joining workers")
 
 
-def test_no_power_work_when_target_is_met() -> None:
-    simulator = install_recorded_cycle(2)
+def test_full_cycle_ignores_static_target() -> None:
+    install_recorded_cycle(2)
     sunflowers.num_items = lambda item: sunflowers.POWER_TARGET
 
-    if sunflowers.farm_sunflower_cycle() is not None:
-        raise AssertionError("satisfied power target reported a cycle")
+    if not sunflowers.farm_sunflower_cycle():
+        raise AssertionError("full-field cycle stopped at the static target")
 
-    if simulator.events or recorded_rows:
-        raise AssertionError("satisfied power target still performed work")
+    if sorted(recorded_rows) != [0, 1, 2, 3]:
+        raise AssertionError("full-field cycle skipped work at the static target")
 
 
 def test_real_row_returns_on_failed_plant() -> None:
@@ -214,7 +214,7 @@ def main() -> None:
     test_full_cycle_orders_and_replants()
     test_measurements_keep_all_rows()
     test_failed_row_stops_before_harvest()
-    test_no_power_work_when_target_is_met()
+    test_full_cycle_ignores_static_target()
     test_real_row_returns_on_failed_plant()
     print("Passed bounded sunflower cycle, measurement, ordering, and failure tests")
 

@@ -474,6 +474,22 @@ def test_power_boundary_uses_adaptive_target() -> None:
         raise AssertionError("power at the static target did not reach the adaptive target")
 
 
+def test_adaptive_power_target_runs_full_cycle() -> None:
+    reset_inventory()
+    inventory[Items.Power] = 20
+    top_hat.POWER_OBSERVED_CONSUMPTION = 8
+    top_hat.can_run_sunflowers = lambda *args: True
+    top_hat.run_item_producer = REAL_RUN_ITEM_PRODUCER
+    cycle_calls = []
+    top_hat.farm_sunflower_cycle = lambda: cycle_calls.append(True) or True
+
+    if not top_hat.perform_next_action({Items.Wood: 1}):
+        raise AssertionError("adaptive power cycle reported failure")
+
+    if len(cycle_calls) != 1:
+        raise AssertionError("adaptive power target did not run a sunflower cycle")
+
+
 def test_direct_dependency_cycle_stops_cleanly() -> None:
     reset_inventory()
     top_hat.run_item_producer = REAL_RUN_ITEM_PRODUCER
@@ -538,6 +554,7 @@ def main() -> None:
     test_weird_substance_action_stops_at_immediate_target()
     test_gold_complete_does_not_request_weird_substance()
     test_power_boundary_uses_adaptive_target()
+    test_adaptive_power_target_runs_full_cycle()
     test_direct_dependency_cycle_stops_cleanly()
     test_multi_item_dependency_cycle_stops_cleanly()
     test_blocked_dependency_allows_unrelated_resource_work()

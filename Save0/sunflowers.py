@@ -323,9 +323,6 @@ def harvest_full_sunflower_tiers(positions_by_petals, harvest_count):
 
 def farm_sunflower_cycle() -> bool:
     # Run one finite full-field power cycle and leave nine flowers mature.
-    if not needs_power():
-        return None
-
     size = get_world_size()
     if size * size < SUNFLOWER_MIN_REMAINING + 1:
         return False
