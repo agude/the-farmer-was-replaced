@@ -19,6 +19,7 @@ from trees import farm_tree_cycle
 
 POWER_LOW_WATERMARK = POWER_TARGET // 10
 POWER_HIGH_WATERMARK = POWER_TARGET
+POWER_OBSERVED_CONSUMPTION = 0
 NO_PROGRESS_LIMIT = 2
 
 
@@ -33,13 +34,17 @@ def needs_item(cost, item) -> bool:
     return num_items(item) < get_cost_amount(cost, item)
 
 
+def get_power_low_watermark() -> int:
+    return POWER_LOW_WATERMARK + POWER_OBSERVED_CONSUMPTION
+
+
 def get_power_target(cost) -> int:
     target = get_cost_amount(cost, Items.Power)
 
     if target < POWER_HIGH_WATERMARK:
-        return POWER_HIGH_WATERMARK
+        target = POWER_HIGH_WATERMARK
 
-    return target
+    return target + POWER_OBSERVED_CONSUMPTION
 
 
 def is_power_stockpile_complete(cost) -> bool:
@@ -276,7 +281,7 @@ def perform_next_action(cost) -> bool:
     # Select one bounded action using current protected balances.
     power_target = get_power_target(cost)
 
-    if num_items(Items.Power) < POWER_LOW_WATERMARK:
+    if num_items(Items.Power) < get_power_low_watermark():
         return run_selected_producer(Items.Power, cost)
 
     if num_items(Items.Power) < power_target:
@@ -334,6 +339,26 @@ def get_inventory_snapshot(cost):
     return snapshot
 
 
+def get_snapshot_amount(snapshot, item) -> int:
+    for snapshot_item, amount in snapshot:
+        if snapshot_item == item:
+            return amount
+
+    return 0
+
+
+def record_power_consumption(before, after) -> None:
+    # Retain the largest observed net power drop as a future reserve.
+    global POWER_OBSERVED_CONSUMPTION
+
+    before_power = get_snapshot_amount(before, Items.Power)
+    after_power = get_snapshot_amount(after, Items.Power)
+    consumption = before_power - after_power
+
+    if consumption > POWER_OBSERVED_CONSUMPTION:
+        POWER_OBSERVED_CONSUMPTION = consumption
+
+
 def farm_top_hat() -> bool:
     # Reconcile live costs one bounded action at a time before unlocking.
     if num_unlocked(Unlocks.Top_Hat) > 0:
@@ -370,6 +395,7 @@ def farm_top_hat() -> bool:
             return False
 
         after = get_inventory_snapshot(refreshed_cost)
+        record_power_consumption(before, after)
 
         if before == after:
             no_progress_count += 1

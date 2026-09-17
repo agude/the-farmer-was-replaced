@@ -78,6 +78,7 @@ def reset_inventory() -> None:
     top_hat.get_world_size = lambda: 4
     top_hat.POWER_LOW_WATERMARK = 10
     top_hat.POWER_HIGH_WATERMARK = 20
+    top_hat.POWER_OBSERVED_CONSUMPTION = 0
 
 
 def test_already_unlocked_returns_immediately() -> None:
@@ -226,6 +227,29 @@ def test_power_reaches_high_watermark_without_live_power_cost() -> None:
         raise AssertionError("planner did not leave power mode at the high watermark")
 
 
+def test_power_watermarks_adjust_from_observed_consumption() -> None:
+    reset_inventory()
+    cost = {Items.Power: 5}
+    before = [(Items.Power, 30)]
+    after = [(Items.Power, 22)]
+
+    top_hat.record_power_consumption(before, after)
+
+    if top_hat.get_power_low_watermark() != 18:
+        raise AssertionError("low power watermark ignored observed consumption")
+
+    if top_hat.get_power_target(cost) != 28:
+        raise AssertionError("high power watermark ignored observed consumption")
+
+    actions = []
+    top_hat.run_item_producer = lambda item, policy: actions.append(item) or True
+    inventory[Items.Power] = 17
+    top_hat.perform_next_action(cost)
+
+    if actions[-1] != Items.Power:
+        raise AssertionError("observed consumption did not trigger replenishment")
+
+
 def test_tree_budget_counts_checkerboard_tiles() -> None:
     reset_inventory()
     original_budget = top_hat.get_planting_budget
@@ -306,6 +330,7 @@ def main() -> None:
     test_unlock_failure_is_called_once()
     test_policy_priority()
     test_power_reaches_high_watermark_without_live_power_cost()
+    test_power_watermarks_adjust_from_observed_consumption()
     test_tree_budget_counts_checkerboard_tiles()
     test_protected_balance_plus_cycle_budget()
     test_missing_fertilizer_reports_wait()
