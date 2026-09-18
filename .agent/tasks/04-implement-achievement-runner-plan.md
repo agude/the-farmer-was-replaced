@@ -1,0 +1,24 @@
+---
+status: in_progress
+created: "2026-09-18T19:20:09.521219+00:00"
+updated: "2026-09-18T19:22:12.581067+00:00"
+started: "2026-09-18T19:20:16.268118+00:00"
+approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
+criteria:
+  - All required plan tasks are implemented or have recorded evidence
+  - just check passes after the final implementation
+  - Each implementation task has an atomic commit
+files:
+  - plan.md
+  - Save0
+  - scripts
+  - justfile
+---
+
+# Implement achievement runner plan
+
+## Notes
+
+### 2026-09-18T19:22:12.581052+00:00
+
+Task 1 complete: added Save0/achievement_config.py with the six exact timed targets, disabled debug/benchmark defaults, and 4x4 x 8 x 4 maze layout constants; added scripts/test_achievement_config.py and included achievement-config-test in just check. Focused test and full just check passed with UV_CACHE_DIR and UV_TOOL_DIR redirected to /tmp.
