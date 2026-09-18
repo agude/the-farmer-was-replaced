@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T20:35:54.599839+00:00"
+updated: "2026-09-18T22:30:56.087557+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Task 30 static implementation complete: added the Leaderboard early-success return and blank-world guard to reset_progression.py, plus run_leaderboard_reset.py targeting the guarded reset_progression window. Harness covers immediate Leaderboard termination, no nested leaderboard call, blank-state guard, board selection, window name, and speedup; full just check passed. Ten-seed simulation, real Fastest Reset acceptance, and Full Automation unlock remain live validation.
+Correction: the repository just check command passes when task-local uv and Ruff caches are used. The real-game benchmark and achievement-closure requirements remain unverified because the game runtime is unavailable; the plan result log remains intentionally unfilled.
 
 ## Notes
 
@@ -156,3 +156,15 @@ Reset producer audit correction: natural Grass no longer requires the Grass upgr
 Reset-stage audit correction: Gold now repeats funded one-relocation maze workers, Bone now repeats funded general dinosaur cycles, and reusable maze workers remove exhausted mazes before replacement. Focused maze/reset tests and full `just check` passed; reset producers committed as `6d5f595`, maze cleanup is staged for its own atomic commit.
 
 Fastest Reset audit correction: removed the hidden Top Hat purchase and prerequisite from reset progression. The reset leaderboard only needs to reach `Unlocks.Leaderboard`; Top Hat remains a separate live-save unlock task. Added a regression check and full `just check` passed.
+
+### 2026-09-18T22:28:30.285738+00:00
+
+Continuation audit: commits 3699ddf, ee3f9c1, 2e6bdf7, 86cbf9d, b3081ae, c18d65f, and 62c83bf add world-size-aware maze ownership, seconds/rate diagnostics, target-driven reset producers, level-aware reset progression, dinosaur start positioning, reset diagnostics, and a reduced end-to-end model.  passes. Real-game benchmarks, ten-minute soaks, leaderboard runs, and final achievement closure remain unavailable without the game runtime; plan.md result log remains intentionally unfilled.
+
+### 2026-09-18T22:28:47.187575+00:00
+
+Correction: the repository just check command passes when task-local uv and Ruff caches are used. The real-game benchmark and achievement-closure requirements remain unverified because the game runtime is unavailable; the plan result log remains intentionally unfilled.
+
+### 2026-09-18T22:30:56.087533+00:00
+
+Correction: the full repository check passes with task-local uv and Ruff caches. The prior note's missing phrase was a shell-quoting artifact.
