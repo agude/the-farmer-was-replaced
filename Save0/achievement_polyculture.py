@@ -181,9 +181,78 @@ def wait_for_primary() -> bool:
     return False
 
 
+def wait_for_companion_entity(entity) -> bool:
+    for _check in range(MAX_TRANSACTION_ATTEMPTS):
+        if get_entity_type() == entity:
+            return True
+
+    return False
+
+
+def replace_companion_entity(entity) -> bool:
+    current_entity = get_entity_type()
+
+    if current_entity == entity:
+        return True
+
+    if current_entity != None:
+        if can_harvest():
+            if not harvest():
+                return False
+        else:
+            clear()
+
+        if get_entity_type() != None:
+            return False
+
+    if not ensure_ground_for_entity(entity):
+        return False
+
+    if not plant(entity):
+        return False
+
+    return True
+
+
+def report_transaction_failure(
+    primary_x: int,
+    primary_y: int,
+    companion_x,
+    companion_y,
+    expected_entity,
+    observed_entity,
+    phase,
+) -> bool:
+    quick_print(
+        "Polyculture transaction failed: primary=("
+        + str(primary_x)
+        + ","
+        + str(primary_y)
+        + ") companion=("
+        + str(companion_x)
+        + ","
+        + str(companion_y)
+        + ") expected="
+        + str(expected_entity)
+        + " observed="
+        + str(observed_entity)
+        + " phase="
+        + phase
+    )
+    return False
+
+
 def perform_polculture_transaction(primary_x: int, primary_y: int, mode) -> bool:
     if not is_primary_tile(primary_x, primary_y, mode):
-        return False
+        return report_transaction_failure(
+            primary_x,
+            primary_y,
+            None,
+            None,
+            get_primary_entity(mode),
+            None,
+            "primary-position",
+        )
 
     primary_entity = get_primary_entity(mode)
 
@@ -191,38 +260,115 @@ def perform_polculture_transaction(primary_x: int, primary_y: int, mode) -> bool
         move_to(primary_x, primary_y)
 
         if not establish_primary(primary_entity):
-            return False
+            return report_transaction_failure(
+                primary_x,
+                primary_y,
+                None,
+                None,
+                primary_entity,
+                get_entity_type(),
+                "primary-setup",
+            )
 
         companion = get_transaction_companion(primary_x, primary_y, mode)
 
         if companion == None:
-            return False
+            if not can_harvest() or not harvest():
+                return report_transaction_failure(
+                    primary_x,
+                    primary_y,
+                    None,
+                    None,
+                    None,
+                    get_entity_type(),
+                    "companion-request",
+                )
+            continue
 
         if not companion:
             if not can_harvest() or not harvest():
-                return False
+                return report_transaction_failure(
+                    primary_x,
+                    primary_y,
+                    None,
+                    None,
+                    None,
+                    get_entity_type(),
+                    "companion-request",
+                )
             continue
 
         companion_entity, companion_x, companion_y = companion
         move_to(companion_x, companion_y)
 
-        if get_entity_type() != None and get_entity_type() != companion_entity:
-            return False
+        if not replace_companion_entity(companion_entity):
+            return report_transaction_failure(
+                primary_x,
+                primary_y,
+                companion_x,
+                companion_y,
+                companion_entity,
+                get_entity_type(),
+                "companion-setup",
+            )
 
-        if get_entity_type() == None and not plant_entity_for_transaction(companion_entity):
-            return False
+        if not wait_for_companion_entity(companion_entity):
+            return report_transaction_failure(
+                primary_x,
+                primary_y,
+                companion_x,
+                companion_y,
+                companion_entity,
+                get_entity_type(),
+                "companion-readiness",
+            )
 
         move_to(primary_x, primary_y)
 
         if not wait_for_primary():
-            return False
+            return report_transaction_failure(
+                primary_x,
+                primary_y,
+                companion_x,
+                companion_y,
+                companion_entity,
+                get_entity_type(),
+                "primary-readiness",
+            )
 
         if not harvest():
-            return False
+            return report_transaction_failure(
+                primary_x,
+                primary_y,
+                companion_x,
+                companion_y,
+                companion_entity,
+                get_entity_type(),
+                "primary-harvest",
+            )
 
-        return plant_entity_for_transaction(primary_entity)
+        if not plant_entity_for_transaction(primary_entity):
+            return report_transaction_failure(
+                primary_x,
+                primary_y,
+                companion_x,
+                companion_y,
+                companion_entity,
+                get_entity_type(),
+                "primary-replant",
+            )
 
-    return False
+        return True
+
+    return report_transaction_failure(
+        primary_x,
+        primary_y,
+        None,
+        None,
+        primary_entity,
+        get_entity_type(),
+        "retry-limit",
+    )
 
 
 def get_polculture_worker_jobs(world_size: int, mode):

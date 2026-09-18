@@ -43,6 +43,8 @@ class TransactionSimulator:
         self.harvest_count = 0
         self.companion_reads = 0
         self.mature = True
+        self.fail_companion_plant = False
+        self.messages = []
 
     def install(self) -> None:
         transaction.Entities = Entities
@@ -60,6 +62,8 @@ class TransactionSimulator:
         planting.till = self.till
         transaction.can_harvest = self.can_harvest
         transaction.harvest = self.harvest
+        transaction.clear = self.clear
+        transaction.quick_print = self.quick_print
 
     def move_to(self, x: int, y: int) -> None:
         self.position = (x, y)
@@ -79,6 +83,8 @@ class TransactionSimulator:
 
     def plant(self, entity) -> bool:
         self.events.append(("plant", self.position, entity))
+        if self.fail_companion_plant and entity != Entities.Grass:
+            return False
         if not self.plant_result:
             return False
 
@@ -106,6 +112,13 @@ class TransactionSimulator:
         self.harvest_count += 1
         self.entities.pop(self.position, None)
         return True
+
+    def clear(self) -> None:
+        self.events.append(("clear", self.position))
+        self.entities.pop(self.position, None)
+
+    def quick_print(self, message: str) -> None:
+        self.messages.append(message)
 
 
 def test_all_companion_entity_types() -> None:
@@ -144,6 +157,62 @@ def test_ground_conversion_matches_requested_entity() -> None:
         raise AssertionError("soil companion did not convert its ground")
 
 
+def test_different_existing_companion_is_replaced() -> None:
+    simulator = TransactionSimulator(Entities.Carrot)
+    simulator.entities[(4, 3)] = Entities.Tree
+    simulator.install()
+
+    if not transaction.perform_polculture_transaction(3, 3, transaction.HAY_MODE):
+        raise AssertionError("transaction did not replace the old companion")
+    if ("clear", (4, 3)) not in simulator.events:
+        raise AssertionError("old companion was not cleared before replacement")
+    if simulator.entities.get((4, 3)) != Entities.Carrot:
+        raise AssertionError("requested companion was not established")
+
+
+def test_changing_companion_requests_complete_one_hundred_transactions() -> None:
+    simulator = TransactionSimulator(Entities.Grass)
+    positions = [(4, 3), (5, 3), (4, 4), (5, 4)]
+    entities = (Entities.Grass, Entities.Bush, Entities.Tree, Entities.Carrot)
+
+    for index in range(100):
+        position = positions[index % len(positions)]
+        entity = entities[(index + index // len(positions)) % len(entities)]
+        simulator.companions.append((entity, position))
+
+    simulator.install()
+    completed = 0
+    for _transaction in range(100):
+        if not transaction.perform_polculture_transaction(3, 3, transaction.HAY_MODE):
+            raise AssertionError(f"changing companion failed at transaction {completed}")
+        completed += 1
+
+    if completed != 100:
+        raise AssertionError("not all changing companion transactions completed")
+
+
+def test_companion_failure_reports_transaction_state() -> None:
+    simulator = TransactionSimulator(Entities.Carrot)
+    simulator.fail_companion_plant = True
+    simulator.install()
+
+    if transaction.perform_polculture_transaction(3, 3, transaction.HAY_MODE):
+        raise AssertionError("failed companion plant reported success")
+    if len(simulator.messages) != 1:
+        raise AssertionError(f"companion failure was not reported once: {simulator.messages}")
+
+    message = simulator.messages[0]
+    for expected in (
+        "primary=(3,3)",
+        "companion=(4,3)",
+        "expected=Carrot",
+        "observed=None",
+        "phase=companion-setup",
+    ):
+        if expected not in message:
+            raise AssertionError(f"diagnostic omitted {expected}: {message}")
+
+
 def test_failed_plant_does_not_harvest_primary() -> None:
     simulator = TransactionSimulator(Entities.Carrot, plant_result=False)
     simulator.install()
@@ -178,6 +247,9 @@ def test_invalid_request_can_reroll_own_primary() -> None:
 def main() -> None:
     test_all_companion_entity_types()
     test_ground_conversion_matches_requested_entity()
+    test_different_existing_companion_is_replaced()
+    test_changing_companion_requests_complete_one_hundred_transactions()
+    test_companion_failure_reports_transaction_state()
     test_failed_plant_does_not_harvest_primary()
     test_out_of_region_request_is_rejected()
     test_invalid_request_can_reroll_own_primary()
