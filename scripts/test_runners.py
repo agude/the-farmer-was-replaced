@@ -20,6 +20,9 @@ RUNNERS = {
     "run_pumpkins.py": ("pumpkins", "farm_pumpkin_cycle"),
     "run_sunflowers.py": ("sunflowers", "farm_sunflower_cycle"),
 }
+FINITE_RUNNERS = {
+    "run_achievement_healer.py": "run_healer",
+}
 IMPORT_SAFE_IMPLEMENTATIONS = (
     "achievement_config.py",
     "achievement_metrics.py",
@@ -84,9 +87,34 @@ def assert_import_safe_module(filename: str) -> None:
                 raise AssertionError(f"{filename} performs {node.func.id} at import time")
 
 
+def assert_finite_runner_structure(filename: str, function: str) -> None:
+    source = (SAVE_DIRECTORY / filename).read_text()
+    tree = ast.parse(source)
+    functions = [node for node in tree.body if isinstance(node, ast.FunctionDef)]
+
+    if not any(node.name == function for node in functions):
+        raise AssertionError(f"{filename} has no {function} operation")
+
+    if any(isinstance(node, ast.While) for node in ast.walk(tree)):
+        raise AssertionError(f"{filename} contains an unbounded loop")
+
+    calls = [
+        node.func.id
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    ]
+    if function not in calls:
+        raise AssertionError(f"{filename} does not invoke its finite operation")
+
+
 def test_import_safe_achievement_modules() -> None:
     for filename in IMPORT_SAFE_IMPLEMENTATIONS:
         assert_import_safe_module(filename)
+
+
+def test_finite_runner_structure() -> None:
+    for filename, function in FINITE_RUNNERS.items():
+        assert_finite_runner_structure(filename, function)
 
 
 def test_runner_structure() -> None:
@@ -123,7 +151,8 @@ def test_runner_structure() -> None:
 def main() -> None:
     test_runner_structure()
     test_import_safe_achievement_modules()
-    print("Passed runner structure, failure-exit, and import-safety tests")
+    test_finite_runner_structure()
+    print("Passed runner structure, finite-runner, failure-exit, and import-safety tests")
 
 
 if __name__ == "__main__":
