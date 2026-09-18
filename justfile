@@ -137,6 +137,10 @@ achievement-pumpkin-test:
 achievement-pumpkin-runner-test:
     uv run scripts/test_achievement_pumpkin_runner.py
 
+# Run the static Hay Master runner harness.
+achievement-hay-runner-test:
+    uv run scripts/test_achievement_hay_runner.py
+
 # Run the CPython Dinosaur Master harness.
 achievement-dinosaur-test:
     uv run scripts/test_achievement_dinosaur.py
@@ -157,7 +161,7 @@ achievement-polyculture-workers-test:
 runner-test:
     uv run scripts/test_runners.py
 
-check: lint cactus-test farm-layout-test sunflower-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test hay-test carrot-test tree-test pumpkin-test cactus-cycle-test sunflower-cycle-test resource-cost-test top-hat-test top-hat-entry-test achievement-config-test achievement-metrics-test achievement-healer-test achievement-import-test achievement-stack-overflow-test achievement-cactus-test achievement-cactus-runner-test achievement-pumpkin-test achievement-pumpkin-runner-test achievement-dinosaur-test achievement-polyculture-test achievement-polyculture-transaction-test achievement-polyculture-workers-test runner-test
+check: lint cactus-test farm-layout-test sunflower-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test hay-test carrot-test tree-test pumpkin-test cactus-cycle-test sunflower-cycle-test resource-cost-test top-hat-test top-hat-entry-test achievement-config-test achievement-metrics-test achievement-healer-test achievement-import-test achievement-stack-overflow-test achievement-cactus-test achievement-cactus-runner-test achievement-pumpkin-test achievement-pumpkin-runner-test achievement-hay-runner-test achievement-dinosaur-test achievement-polyculture-test achievement-polyculture-transaction-test achievement-polyculture-workers-test runner-test
 
 hooks-install:
     ln -sf ../../bin/pre-commit.sh .git/hooks/pre-commit

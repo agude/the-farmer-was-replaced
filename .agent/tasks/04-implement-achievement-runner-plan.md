@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T20:00:56.100345+00:00"
+updated: "2026-09-18T20:03:00.394071+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Task 16 complete: added persistent polyculture worker scheduling with an 8x8 sparse template, capacity bounded by max_drones(), stable tuple-owned regions, persistent child workers, parent-owned fallback jobs when spawn fails, and no shared mutable correctness globals or farm-wide dispatch joins. The CPython scheduler harness runs 1,000 transactions and verifies capacity/fallback ownership. Full just check passed.
+Follow-up correction: centered each 8x8 primary at its region's (3,3) offset, classified the complete 24-tile Manhattan-radius-three companion set, and fixed companion enumeration to use region anchors. Updated layout and transaction harnesses; full just check passed.
 
 ## Notes
 
@@ -88,3 +88,7 @@ Task 16 complete: added persistent polyculture worker scheduling with an 8x8 spa
 ### 2026-09-18T20:00:56.100330+00:00
 
 Follow-up correction: centered each 8x8 primary at its region's (3,3) offset, classified the complete 24-tile Manhattan-radius-three companion set, and fixed companion enumeration to use region anchors. Updated layout and transaction harnesses; full just check passed.
+
+### 2026-09-18T20:03:00.394057+00:00
+
+Task 17 static implementation complete: added run_achievement_hay.py with Hay baseline/delta reporting over persistent polyculture workers, registered the runner, and added hot-loop/ mode/failure boundary coverage. Full just check passed. Candidate-template/worker benchmark and Hay Master throughput still require identical-seed simulation and live in-game Stats validation.

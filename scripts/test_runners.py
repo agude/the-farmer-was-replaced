@@ -27,6 +27,10 @@ RUNNERS = {
         "achievement_pumpkin",
         "farm_achievement_pumpkin_cycle",
     ),
+    "run_achievement_hay.py": (
+        "achievement_polyculture",
+        "run_polculture_workers",
+    ),
 }
 FINITE_RUNNERS = {
     "run_achievement_healer.py": "run_healer",
@@ -72,7 +76,10 @@ def assert_import(tree: ast.Module, filename: str, module: str, function: str) -
         if isinstance(node, ast.ImportFrom):
             imports.append((node.module, [alias.name for alias in node.names]))
 
-    if (module, [function]) not in imports:
+    if not any(
+        imported_module == module and function in imported_names
+        for imported_module, imported_names in imports
+    ):
         raise AssertionError(f"{filename} imports the wrong bounded operation: {imports}")
 
 
