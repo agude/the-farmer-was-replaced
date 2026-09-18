@@ -13,6 +13,7 @@ from pathlib import Path
 
 SAVE_DIRECTORY = Path(__file__).resolve().parents[1] / "Save0"
 LAUNCHER = SAVE_DIRECTORY / "run_simulate_fastest_reset.py"
+SEED_MATRIX_LAUNCHER = SAVE_DIRECTORY / "run_simulation_reset.py"
 
 
 def test_simulation_uses_one_configurable_empty_start() -> None:
@@ -85,10 +86,59 @@ def test_launcher_prints_once_and_does_not_nest_simulation() -> None:
         raise AssertionError("reset rehearsal is coupled to live or leaderboard execution")
 
 
+def test_seed_matrix_runs_all_required_seeds() -> None:
+    source = SEED_MATRIX_LAUNCHER.read_text()
+    tree = ast.parse(source)
+    assignments = {
+        statement.targets[0].id: statement.value
+        for statement in tree.body
+        if isinstance(statement, ast.Assign)
+        and len(statement.targets) == 1
+        and isinstance(statement.targets[0], ast.Name)
+    }
+    seeds = assignments.get("SIMULATION_SEEDS")
+    if not isinstance(seeds, ast.List) or [element.value for element in seeds.elts] != list(
+        range(1, 11)
+    ):
+        raise AssertionError("seed matrix does not contain exactly seeds 1 through 10")
+
+    loops = [node for node in tree.body if isinstance(node, ast.For)]
+    if len(loops) != 1:
+        raise AssertionError("seed matrix must use one bounded seed loop")
+    loop = loops[0]
+    if not isinstance(loop.target, ast.Name) or loop.target.id != "simulation_seed":
+        raise AssertionError("seed matrix loop target changed")
+    if not isinstance(loop.iter, ast.Name) or loop.iter.id != "SIMULATION_SEEDS":
+        raise AssertionError("seed matrix loop does not use SIMULATION_SEEDS")
+
+    calls = [
+        node
+        for node in ast.walk(loop)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "simulate"
+    ]
+    if len(calls) != 1 or len(calls[0].args) != 6:
+        raise AssertionError("seed matrix must make one six-argument simulate call")
+    if not isinstance(calls[0].args[4], ast.Name) or calls[0].args[4].id != "simulation_seed":
+        raise AssertionError("seed matrix does not pass the loop seed to simulate")
+
+    print_calls = [
+        node
+        for node in ast.walk(loop)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "quick_print"
+    ]
+    if len(print_calls) != 1:
+        raise AssertionError("seed matrix must print one result for every seed")
+
+
 def main() -> None:
     test_simulation_uses_one_configurable_empty_start()
     test_launcher_prints_once_and_does_not_nest_simulation()
-    print("Passed isolated Fastest Reset simulation inputs, seed, speedup, and output tests")
+    test_seed_matrix_runs_all_required_seeds()
+    print("Passed isolated Fastest Reset inputs, speedup, output, and ten-seed launcher tests")
 
 
 if __name__ == "__main__":

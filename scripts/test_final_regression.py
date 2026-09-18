@@ -33,6 +33,7 @@ SPECIAL_ENTRY_POINTS = {
     "run_leaderboard_cactus.py": "leaderboard_run",
     "run_leaderboard_reset.py": "leaderboard_run",
     "run_simulate_fastest_reset.py": "simulate",
+    "run_simulation_reset.py": "simulate",
 }
 FORBIDDEN_IMPORT_CALLS = {
     "clear",
