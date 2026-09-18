@@ -113,7 +113,7 @@ def get_protected_inventory(cost, stage):
         add_protected_balance(
             protected_inventory,
             Items.Power,
-            get_power_target(cost),
+            get_power_low_watermark(),
         )
 
     if stage != Items.Cactus and not (

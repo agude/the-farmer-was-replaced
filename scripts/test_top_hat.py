@@ -709,7 +709,6 @@ class PlannerSimulation:
             Items.Fertilizer: 0,
         }
         self.top_hat_cost = {
-            Items.Power: 30,
             Items.Cactus: 2,
             Items.Gold: 8,
             Items.Carrot: 3,
@@ -729,6 +728,9 @@ class PlannerSimulation:
         self.unlock_calls = 0
         self.wait_count = 0
         self.protection_checks = 0
+        self.protected_snapshots = []
+        self.power_after_actions = []
+        self.consume_protected_balance = False
         self.unlocked = False
 
     def install(self) -> None:
@@ -760,6 +762,8 @@ class PlannerSimulation:
         top_hat.POWER_LOW_WATERMARK = 10
         top_hat.POWER_HIGH_WATERMARK = 20
         top_hat.POWER_OBSERVED_CONSUMPTION = 0
+        top_hat.POWER_STOCKPILE_ESTABLISHED = False
+        top_hat.POWER_REFILL_ACTIVE = False
         top_hat.run_item_producer = REAL_RUN_ITEM_PRODUCER
         top_hat.perform_next_action = REAL_PERFORM_NEXT_ACTION
 
@@ -784,53 +788,73 @@ class PlannerSimulation:
     def record_action(self, action) -> None:
         self.actions.append(action)
 
-    def check_protected(self, stage) -> None:
-        protected = top_hat.get_protected_inventory(self.top_hat_cost, stage)
-        self.protection_checks += 1
+    def capture_protected(self, stage):
+        current_protection = top_hat.get_protected_inventory(self.top_hat_cost, stage)
+        protected = {}
 
+        for item in current_protection:
+            protected[item] = current_protection[item]
+
+        self.protected_snapshots.append((stage, protected))
+        self.protection_checks += 1
+        return protected
+
+    def check_protected(self, protected) -> None:
         for item in protected:
             if self.inventory[item] < protected[item]:
                 raise AssertionError("protected balance was consumed for " + str(item))
 
+    def finish_action(self) -> None:
+        self.power_after_actions.append((self.actions[-1], self.inventory[Items.Power]))
+
     def advance_time(self) -> None:
         self.record_action("wait")
         self.wait_count += 1
+        self.inventory[Items.Power] -= 1
 
         if self.wait_count == 2:
             self.inventory[Items.Fertilizer] = 1
+        self.finish_action()
 
     def farm_hay_cycle(self) -> bool:
+        protected = self.capture_protected(Items.Hay)
         self.record_action("hay")
         self.inventory[Items.Hay] += 4
-        self.check_protected(Items.Hay)
+        self.check_protected(protected)
+        self.finish_action()
         return True
 
     def farm_carrot_cycle(self) -> bool:
         if self.inventory[Items.Hay] < 4:
             return False
 
+        protected = self.capture_protected(Items.Carrot)
         self.record_action("carrot")
         self.inventory[Items.Hay] -= 4
-        self.check_protected(Items.Carrot)
         self.inventory[Items.Carrot] += 4
+        self.check_protected(protected)
+        self.finish_action()
         return True
 
     def farm_pumpkin_cycle(self) -> bool:
         if self.inventory[Items.Carrot] < 4:
             return False
 
+        protected = self.capture_protected(Items.Pumpkin)
         self.record_action("pumpkin")
         self.inventory[Items.Carrot] -= 4
         self.inventory[Items.Pumpkin] += 4
+        self.check_protected(protected)
+        self.finish_action()
         return True
 
     def farm_cactus_cycle(self, *args) -> bool:
         if self.inventory[Items.Pumpkin] < 4:
             return False
 
+        protected = self.capture_protected(Items.Cactus)
         self.record_action("cactus")
         self.inventory[Items.Pumpkin] -= 4
-        self.check_protected(Items.Gold)
         self.inventory[Items.Cactus] += 4
 
         weird_target = args[5]
@@ -841,34 +865,46 @@ class PlannerSimulation:
             self.inventory[Items.Fertilizer] -= 1
             self.inventory[Items.Weird_Substance] += 8
 
+        self.check_protected(protected)
+        self.finish_action()
         return True
 
     def farm_sunflower_cycle(self) -> bool:
         if self.inventory[Items.Carrot] < 4:
             return False
 
+        protected = self.capture_protected(Items.Power)
         self.record_action("power")
         self.inventory[Items.Carrot] -= 4
         self.inventory[Items.Power] += 16
+        self.check_protected(protected)
+        self.finish_action()
         return True
 
     def farm_tree_cycle(self) -> bool:
         if self.inventory[Items.Hay] < 4:
             return False
 
+        protected = self.capture_protected(Items.Wood)
         self.record_action("wood")
         self.inventory[Items.Hay] -= 4
-        self.check_protected(Items.Wood)
+        if self.consume_protected_balance:
+            self.inventory[Items.Power] -= 1
         self.inventory[Items.Wood] += 4
+        self.check_protected(protected)
+        self.finish_action()
         return True
 
     def farm_mazes(self, gold_target, substance_reserve) -> bool:
         if self.inventory[Items.Weird_Substance] < 8 + substance_reserve:
             return False
 
+        protected = self.capture_protected(Items.Gold)
         self.record_action("maze")
         self.inventory[Items.Weird_Substance] -= 8
         self.inventory[Items.Gold] += 8
+        self.check_protected(protected)
+        self.finish_action()
         return True
 
     def unlock(self, unlock) -> bool:
