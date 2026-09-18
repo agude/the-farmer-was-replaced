@@ -1,0 +1,95 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
+"""Verify the isolated Fastest Reset simulation launcher."""
+
+from __future__ import annotations
+
+import ast
+from pathlib import Path
+
+
+SAVE_DIRECTORY = Path(__file__).resolve().parents[1] / "Save0"
+LAUNCHER = SAVE_DIRECTORY / "run_simulate_fastest_reset.py"
+
+
+def test_simulation_uses_one_configurable_empty_start() -> None:
+    source = LAUNCHER.read_text()
+    tree = ast.parse(source)
+    calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "simulate"
+    ]
+    if len(calls) != 1:
+        raise AssertionError("reset rehearsal must make one simulate call")
+
+    call = calls[0]
+    expected_arguments = [
+        "SIMULATION_FILE",
+        "SIMULATION_UNLOCKS",
+        "SIMULATION_ITEMS",
+        "SIMULATION_GLOBALS",
+        "SIMULATION_SEED",
+        "SIMULATION_SPEEDUP",
+    ]
+    actual_arguments = [
+        argument.id if isinstance(argument, ast.Name) else None for argument in call.args
+    ]
+    if actual_arguments != expected_arguments:
+        raise AssertionError(f"reset rehearsal arguments changed: {actual_arguments}")
+
+    assignments = {
+        statement.targets[0].id: statement.value
+        for statement in tree.body
+        if isinstance(statement, ast.Assign)
+        and len(statement.targets) == 1
+        and isinstance(statement.targets[0], ast.Name)
+    }
+    for name in ("SIMULATION_UNLOCKS", "SIMULATION_ITEMS", "SIMULATION_GLOBALS"):
+        value = assignments.get(name)
+        if not isinstance(value, ast.Dict) or value.keys:
+            raise AssertionError(f"{name} is not an empty simulation input")
+    if not isinstance(assignments["SIMULATION_SEED"], ast.Constant):
+        raise AssertionError("simulation seed is not fixed in one obvious location")
+    if not isinstance(assignments["SIMULATION_SPEEDUP"], ast.Constant):
+        raise AssertionError("simulation speedup is not configurable in one obvious location")
+
+
+def test_launcher_prints_once_and_does_not_nest_simulation() -> None:
+    source = LAUNCHER.read_text()
+    tree = ast.parse(source)
+    print_calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "quick_print"
+    ]
+    if len(print_calls) != 1:
+        raise AssertionError("reset rehearsal must print the simulated runtime once")
+    calls = {
+        node.func.id
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+    if calls - {"simulate", "quick_print"}:
+        raise AssertionError(f"reset rehearsal performs live or nested work: {calls}")
+
+    forbidden_text = {"leaderboard_run", "clear", "plant", "harvest", "unlock("}
+    if any(token in source for token in forbidden_text):
+        raise AssertionError("reset rehearsal is coupled to live or leaderboard execution")
+
+
+def main() -> None:
+    test_simulation_uses_one_configurable_empty_start()
+    test_launcher_prints_once_and_does_not_nest_simulation()
+    print("Passed isolated Fastest Reset simulation inputs, seed, speedup, and output tests")
+
+
+if __name__ == "__main__":
+    main()
