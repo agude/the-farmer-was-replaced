@@ -18,6 +18,9 @@ import reset_farmers as farmers  # noqa: E402
 import planting  # noqa: E402
 
 
+ORIGINAL_FARM_CROP = farmers.farm_crop
+
+
 class Entities:
     Grass = "Grass"
     Bush = "Bush"
@@ -58,6 +61,7 @@ class Unlocks:
 
 
 def install() -> None:
+    farmers.farm_crop = ORIGINAL_FARM_CROP
     farmers.Entities = Entities
     farmers.Items = Items
     farmers.Unlocks = Unlocks
@@ -362,6 +366,156 @@ def test_gold_and_bone_stages_preserve_current_world_size() -> None:
         run_world_size(world_size)
 
 
+def test_wood_producer_resumes_after_plant_failure() -> None:
+    install()
+    state = {"item": 0, "entity": None, "plant_attempts": 0}
+    farmers.get_world_size = lambda: 1
+    farmers.num_unlocked = lambda _unlock: 1
+    farmers.num_items = lambda item: state["item"] if item == Items.Wood else 0
+    farmers.get_entity_type = lambda: state["entity"]
+    farmers.get_cost = lambda _entity: {}
+    farmers.ensure_ground_for_entity = lambda _entity: True
+    farmers.can_harvest = lambda: state["entity"] == Entities.Bush
+
+    def plant(entity) -> bool:
+        state["plant_attempts"] += 1
+        if state["plant_attempts"] == 1:
+            return False
+        state["entity"] = entity
+        return True
+
+    def harvest() -> bool:
+        state["item"] += 1
+        state["entity"] = None
+        return True
+
+    farmers.plant = plant
+    farmers.harvest = harvest
+    if farmers.farm_crop(Items.Wood, Entities.Bush, Unlocks.Plant, 1, 0):
+        raise AssertionError("Wood producer hid its planting failure")
+    if not farmers.farm_crop(Items.Wood, Entities.Bush, Unlocks.Plant, 1, 0):
+        raise AssertionError("Wood producer did not resume after planting recovery")
+
+
+def test_pumpkin_producer_resumes_after_dead_tile_clear_failure() -> None:
+    install()
+    state = {"item": 0, "entity": Entities.Dead_Pumpkin, "clear_attempts": 0}
+    farmers.get_world_size = lambda: 1
+    farmers.num_unlocked = lambda _unlock: 1
+    farmers.num_items = lambda item: state["item"] if item == Items.Pumpkin else 0
+    farmers.get_entity_type = lambda: state["entity"]
+    farmers.get_cost = lambda _entity: {}
+    farmers.ensure_ground_for_entity = lambda _entity: True
+    farmers.can_harvest = lambda: state["entity"] == Entities.Pumpkin
+
+    def clear() -> None:
+        state["clear_attempts"] += 1
+        if state["clear_attempts"] > 1:
+            state["entity"] = None
+
+    def plant(entity) -> bool:
+        state["entity"] = entity
+        return True
+
+    def harvest() -> bool:
+        state["item"] += 1
+        state["entity"] = None
+        return True
+
+    farmers.clear = clear
+    farmers.plant = plant
+    farmers.harvest = harvest
+    if farmers.farm_crop(Items.Pumpkin, Entities.Pumpkin, Unlocks.Pumpkins, 1, 0):
+        raise AssertionError("Pumpkin producer hid its dead-tile clear failure")
+    if not farmers.farm_crop(Items.Pumpkin, Entities.Pumpkin, Unlocks.Pumpkins, 1, 0):
+        raise AssertionError("Pumpkin producer did not resume after dead-tile recovery")
+
+
+def test_weird_substance_producer_resumes_after_fertilizer_failure() -> None:
+    install()
+    state = {"weird": 0, "fertilizer": 1, "fertilizer_attempts": 0}
+    farmers.get_world_size = lambda: 1
+    farmers.num_unlocked = lambda _unlock: 1
+    farmers.num_items = lambda item: {
+        Items.Weird_Substance: state["weird"],
+        Items.Fertilizer: state["fertilizer"],
+    }.get(item, 0)
+    farmers.get_entity_type = lambda: Entities.Grass
+    farmers.get_cost = lambda _entity: {}
+    farmers.ensure_ground_for_entity = lambda _entity: True
+    farmers.can_harvest = lambda: True
+    farmers.plant = lambda _entity: True
+
+    def use_item(item) -> bool:
+        if item != Items.Fertilizer:
+            return False
+        state["fertilizer_attempts"] += 1
+        if state["fertilizer_attempts"] == 1:
+            return False
+        state["fertilizer"] -= 1
+        return True
+
+    farmers.use_item = use_item
+    farmers.harvest = lambda: state.update(weird=state["weird"] + 1) or True
+    if farmers.farm_weird_substance(1):
+        raise AssertionError("Weird Substance producer hid its fertilizer failure")
+    if not farmers.farm_weird_substance(1):
+        raise AssertionError("Weird Substance producer did not resume after fertilizer recovery")
+
+
+def test_gold_producer_resumes_after_worker_failure() -> None:
+    install()
+    state = {Items.Gold: 0, Items.Weird_Substance: 2}
+    worker_attempts = []
+    farmers.get_world_size = lambda: 8
+    farmers.num_unlocked = lambda _unlock: 1
+    farmers.num_items = lambda item: state.get(item, 0)
+    farmers.get_reusable_maze_substance_budget = lambda _limit: 2
+    farmers.ensure_planting_inputs = lambda _entity, _count, _depth: True
+
+    def run_worker(_maze_index, _relocation_limit):
+        worker_attempts.append(True)
+        if len(worker_attempts) == 1:
+            return {"reason": "resource_exhausted"}
+        state[Items.Weird_Substance] -= 2
+        state[Items.Gold] += 1
+        return {"reason": farmers.MAZE_WORKER_COMPLETE}
+
+    farmers.run_reusable_maze_worker = run_worker
+    if farmers.farm_gold(1, 0):
+        raise AssertionError("Gold producer hid its maze worker failure")
+    if not farmers.farm_gold(1, 0):
+        raise AssertionError("Gold producer did not resume after worker recovery")
+
+
+def test_bone_producer_resumes_after_dinosaur_failure() -> None:
+    install()
+    state = {Items.Bone: 0, Items.Cactus: 0}
+    dinosaur_attempts = []
+    farmers.get_world_size = lambda: 4
+    farmers.num_unlocked = lambda _unlock: 1
+    farmers.num_items = lambda item: state.get(item, 0)
+    farmers.get_apple_cactus_cost = lambda: 1
+    farmers.get_full_run_cactus_cost = lambda size, _cost: size * size
+    farmers.farm_crop = lambda _item, _entity, _unlock, amount, _depth: (
+        state.update({Items.Cactus: amount}) or True
+    )
+
+    def run_dinosaur(world_size) -> bool:
+        dinosaur_attempts.append(world_size)
+        if len(dinosaur_attempts) == 1:
+            return False
+        state[Items.Cactus] -= world_size * world_size
+        state[Items.Bone] += 1
+        return True
+
+    farmers.run_dinosaur_once = run_dinosaur
+    if farmers.farm_bones(1, 0):
+        raise AssertionError("Bone producer hid its dinosaur failure")
+    if not farmers.farm_bones(1, 0):
+        raise AssertionError("Bone producer did not resume after dinosaur recovery")
+
+
 def test_controller_uses_reset_farmer_hook() -> None:
     source = (SAVE_DIRECTORY / "reset_progression.py").read_text()
     if "from reset_farmers import produce_item" not in source:
@@ -389,6 +543,11 @@ def main() -> None:
     test_gold_producer_repeats_funded_maze_batches()
     test_bone_producer_uses_reset_sized_dinosaur_batches()
     test_gold_and_bone_stages_preserve_current_world_size()
+    test_wood_producer_resumes_after_plant_failure()
+    test_pumpkin_producer_resumes_after_dead_tile_clear_failure()
+    test_weird_substance_producer_resumes_after_fertilizer_failure()
+    test_gold_producer_resumes_after_worker_failure()
+    test_bone_producer_resumes_after_dinosaur_failure()
     test_controller_uses_reset_farmer_hook()
     print(
         "Passed reset crop mappings, preconditions, unsupported-input, maze, and dinosaur producer tests"
