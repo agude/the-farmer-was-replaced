@@ -39,6 +39,8 @@ def test_debug_and_benchmark_modes_default_to_disabled() -> None:
         raise AssertionError("achievement debug output must default to disabled")
     if achievement_config.BENCHMARK_MODE:
         raise AssertionError("achievement benchmark mode must default to disabled")
+    if achievement_config.ENABLE_MAZE_PLACEMENT_PROBE:
+        raise AssertionError("maze placement probe must default to disabled")
 
 
 def test_maze_layout_contract() -> None:

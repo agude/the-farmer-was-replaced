@@ -42,12 +42,65 @@ def get_maze_bounds(maze_index: int):
     return anchor_x, anchor_y, last_x, last_y
 
 
-def get_maze_start_position(maze_index: int):
-    anchor = get_maze_anchor(maze_index)
-    if anchor == None:
+def get_maze_bounds_for_creation(
+    creation_x: int,
+    creation_y: int,
+    maze_size: int,
+    world_size: int,
+):
+    if maze_size <= 0 or world_size < maze_size:
+        return None
+    if creation_x < 0 or creation_y < 0:
+        return None
+    if creation_x >= world_size or creation_y >= world_size:
         return None
 
-    return anchor
+    lower_x = creation_x - maze_size // 2
+    lower_y = creation_y - maze_size // 2
+
+    if lower_x < 0:
+        lower_x = 0
+    if lower_y < 0:
+        lower_y = 0
+
+    if lower_x + maze_size > world_size:
+        lower_x = world_size - maze_size
+    if lower_y + maze_size > world_size:
+        lower_y = world_size - maze_size
+
+    return (
+        lower_x,
+        lower_y,
+        lower_x + maze_size - 1,
+        lower_y + maze_size - 1,
+    )
+
+
+def get_safe_maze_creation_coordinate(
+    lower_x: int,
+    lower_y: int,
+    maze_size: int,
+    world_size: int,
+):
+    if maze_size <= 0 or lower_x < 0 or lower_y < 0:
+        return None
+    if lower_x + maze_size > world_size or lower_y + maze_size > world_size:
+        return None
+
+    return lower_x + maze_size // 2, lower_y + maze_size // 2
+
+
+def get_maze_start_position(maze_index: int):
+    bounds = get_maze_bounds(maze_index)
+    if bounds == None:
+        return None
+
+    return get_safe_maze_creation_coordinate(
+        bounds[0],
+        bounds[1],
+        MAZE_REGION_SIZE,
+        MAZE_WORLD_WIDTH,
+    )
 
 
 def get_maze_index(x: int, y: int):
@@ -85,6 +138,31 @@ def get_maze_worker_jobs(worker_count: int):
 
 def get_maze_directions():
     return [North, East, South, West]
+
+
+def get_maze_probe_coordinates(world_size: int):
+    if world_size <= 0:
+        return []
+
+    midpoint = world_size // 2
+    candidates = [
+        (0, 0),
+        (world_size - 1, 0),
+        (0, world_size - 1),
+        (world_size - 1, world_size - 1),
+        (midpoint, midpoint),
+        (0, midpoint),
+        (world_size - 1, midpoint),
+        (midpoint, 0),
+        (midpoint, world_size - 1),
+    ]
+    coordinates = []
+
+    for coordinate in candidates:
+        if coordinate not in coordinates:
+            coordinates.append(coordinate)
+
+    return coordinates
 
 
 def get_opposite_direction(direction):
@@ -180,6 +258,112 @@ def map_maze(maze_index: int, start_x: int, start_y: int):
         stack.append((neighbor_x, neighbor_y, get_opposite_direction(direction), 0))
 
     return maze_map
+
+
+def map_observed_maze_bounds():
+    start_x = get_pos_x()
+    start_y = get_pos_y()
+    directions = get_maze_directions()
+    visited = [(start_x, start_y)]
+    stack = [(start_x, start_y, None, 0)]
+    lower_x = start_x
+    lower_y = start_y
+    upper_x = start_x
+    upper_y = start_y
+
+    while len(stack) > 0:
+        current_x, current_y, back_direction, direction_index = stack[len(stack) - 1]
+
+        if direction_index >= len(directions):
+            stack.pop()
+            if len(stack) > 0 and not move(back_direction):
+                return None
+            continue
+
+        direction = directions[direction_index]
+        stack[len(stack) - 1] = (
+            current_x,
+            current_y,
+            back_direction,
+            direction_index + 1,
+        )
+
+        if not can_move(direction):
+            continue
+        if not move(direction):
+            return None
+
+        neighbor_x = get_pos_x()
+        neighbor_y = get_pos_y()
+        if neighbor_x < lower_x:
+            lower_x = neighbor_x
+        if neighbor_y < lower_y:
+            lower_y = neighbor_y
+        if neighbor_x > upper_x:
+            upper_x = neighbor_x
+        if neighbor_y > upper_y:
+            upper_y = neighbor_y
+
+        neighbor = (neighbor_x, neighbor_y)
+        if neighbor in visited:
+            if not move(get_opposite_direction(direction)):
+                return None
+            continue
+
+        visited.append(neighbor)
+        stack.append((neighbor_x, neighbor_y, get_opposite_direction(direction), 0))
+
+    return lower_x, lower_y, upper_x, upper_y
+
+
+def create_probe_maze(creation_x: int, creation_y: int, substance_cost: int) -> bool:
+    move_to(creation_x, creation_y)
+    clear()
+
+    if get_ground_type() != Grounds.Soil:
+        till()
+    if not plant(Entities.Bush):
+        return False
+
+    return use_item(Items.Weird_Substance, substance_cost)
+
+
+def run_maze_placement_probe() -> bool:
+    world_size = get_world_size()
+    substance_cost = get_reusable_maze_substance_cost()
+    if world_size <= 0 or substance_cost <= 0:
+        return False
+
+    coordinates = get_maze_probe_coordinates(world_size)
+    for index in range(len(coordinates)):
+        creation_x, creation_y = coordinates[index]
+        if num_items(Items.Weird_Substance) < substance_cost:
+            return False
+        if not create_probe_maze(creation_x, creation_y, substance_cost):
+            return False
+
+        bounds = map_observed_maze_bounds()
+        if bounds == None:
+            return False
+
+        quick_print(
+            "Maze probe creation=("
+            + str(creation_x)
+            + ","
+            + str(creation_y)
+            + ") bounds=("
+            + str(bounds[0])
+            + ","
+            + str(bounds[1])
+            + ","
+            + str(bounds[2])
+            + ","
+            + str(bounds[3])
+            + ")"
+        )
+
+    clear()
+    return True
 
 
 def find_shortest_path(maze_map, start_x: int, start_y: int, target_x: int, target_y: int):
