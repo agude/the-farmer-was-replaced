@@ -1,5 +1,7 @@
 """Import-safe reset progression controller contracts."""
 
+from reset_farmers import produce_item
+
 MAX_UNLOCK_ATTEMPTS = 3
 
 UNLOCK_SUCCESS = "success"
@@ -130,10 +132,6 @@ def get_missing_cost_item(cost):
             return item
 
     return None
-
-
-def produce_item(item, required_amount) -> bool:
-    return False
 
 
 def make_unlock_result(unlock_target, status):

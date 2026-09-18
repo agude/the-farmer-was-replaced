@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T20:28:23.631707+00:00"
+updated: "2026-09-18T20:32:04.194647+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Task 27 complete: added run_simulate_fastest_reset.py as a separate rehearsal launcher with empty unlocks/items/globals, fixed seed 17, configurable speedup 256, and one printed simulated runtime. Static tests verify the six simulate arguments, empty start state, no nested/live operations, and one output; full just check passed.
+Task 28 complete: added import-safe reset_progression.py with explicit unlock reasons/prerequisites, dependency-cycle detection, live cost validation, bounded unlock_one() retries, producer progress proofs, purchase failure diagnostics, and Leaderboard success check. Harness covers direct/multi-item cycles, changing costs, overshoot, failed purchases, missing prerequisites, and no-progress exits; full just check passed.
 
 ## Notes
 
@@ -136,3 +136,7 @@ Task 27 complete: added run_simulate_fastest_reset.py as a separate rehearsal la
 ### 2026-09-18T20:28:23.631692+00:00
 
 Task 28 complete: added import-safe reset_progression.py with explicit unlock reasons/prerequisites, dependency-cycle detection, live cost validation, bounded unlock_one() retries, producer progress proofs, purchase failure diagnostics, and Leaderboard success check. Harness covers direct/multi-item cycles, changing costs, overshoot, failed purchases, missing prerequisites, and no-progress exits; full just check passed.
+
+### 2026-09-18T20:32:04.194633+00:00
+
+Task 29 static implementation complete: added reset_farmers.py with bounded single-tile Hay/Wood/Carrot/Pumpkin/Cactus/Power producers, recursive planting-input safeguards, Weird Substance handling, and explicit Gold/Bone maze/dinosaur stages. Wired reset_progression.py to the producer hook and added precondition/dispatch tests; full just check passed. Full blank-reset progression and ten-seed validation remain live/simulation work for Tasks 30-31.
