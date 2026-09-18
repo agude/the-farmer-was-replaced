@@ -45,117 +45,99 @@ def get_target_level(unlock_target) -> int:
     return 1
 
 
-def append_unlock_steps(plan, unlock_target, reason, prerequisites) -> None:
-    target_level = get_target_level(unlock_target)
-    for level in range(1, target_level + 1):
-        level_reason = reason
-        if level > 1:
-            level_reason = reason + " (level " + str(level) + ")"
-
-        level_prerequisites = prerequisites
-        if level > 1:
-            level_prerequisites = []
-        plan.append((unlock_target, level, level_reason, level_prerequisites))
+def append_route_step(plan, unlock_target, target_level, reason, prerequisites) -> None:
+    plan.append((unlock_target, target_level, reason, prerequisites))
 
 
 def get_unlock_plan():
+    """Return the farm-only reset milestones in measured purchase order."""
     plan = []
-    append_unlock_steps(plan, Unlocks.Variables, "Track reset state with variables", [])
-    append_unlock_steps(
-        plan,
-        Unlocks.Operators,
-        "Compare live inventory and unlock levels",
-        [Unlocks.Variables],
-    )
-    append_unlock_steps(
-        plan, Unlocks.Senses, "Read the farm state before planting", [Unlocks.Operators]
-    )
-    append_unlock_steps(
-        plan, Unlocks.Loops, "Repeat bounded production and purchase attempts", [Unlocks.Operators]
-    )
-    append_unlock_steps(
-        plan, Unlocks.Functions, "Reuse bounded reset-safe producers", [Unlocks.Loops]
-    )
-    append_unlock_steps(
-        plan, Unlocks.Lists, "Store explicit progression queues", [Unlocks.Functions]
-    )
-    append_unlock_steps(plan, Unlocks.Dictionaries, "Store live multi-item costs", [Unlocks.Lists])
-    append_unlock_steps(plan, Unlocks.Import, "Load reset-safe shared farmers", [Unlocks.Functions])
-    append_unlock_steps(plan, Unlocks.Timing, "Measure bounded reset stages", [Unlocks.Functions])
-    append_unlock_steps(plan, Unlocks.Utilities, "Use reusable game utilities", [Unlocks.Functions])
-    append_unlock_steps(plan, Unlocks.Costs, "Read unlock costs at runtime", [Unlocks.Variables])
-    append_unlock_steps(
-        plan,
-        Unlocks.Simulation,
-        "Rehearse progression without live mutation",
-        [Unlocks.Costs],
-    )
-    append_unlock_steps(
-        plan, Unlocks.Grass, "Start the first bounded resource producer", [Unlocks.Variables]
-    )
-    append_unlock_steps(
-        plan, Unlocks.Plant, "Enable crop planting for resource producers", [Unlocks.Grass]
-    )
-    append_unlock_steps(
-        plan, Unlocks.Expand, "Open enough tiles for reset-safe batches", [Unlocks.Plant]
-    )
-    append_unlock_steps(
-        plan, Unlocks.Trees, "Produce Wood for later unlocks", [Unlocks.Plant, Unlocks.Expand]
-    )
-    append_unlock_steps(
-        plan, Unlocks.Carrots, "Produce Carrots for later unlocks", [Unlocks.Plant, Unlocks.Expand]
-    )
-    append_unlock_steps(
-        plan, Unlocks.Watering, "Maintain water-dependent crops", [Unlocks.Plant, Unlocks.Expand]
-    )
-    append_unlock_steps(
-        plan, Unlocks.Pumpkins, "Produce Pumpkin batches", [Unlocks.Watering, Unlocks.Expand]
-    )
-    append_unlock_steps(
-        plan,
-        Unlocks.Cactus,
-        "Produce Cactus and Weird Substance inputs",
-        [Unlocks.Plant, Unlocks.Expand],
-    )
-    append_unlock_steps(
-        plan,
-        Unlocks.Sunflowers,
-        "Produce Power for accelerated stages",
-        [Unlocks.Watering, Unlocks.Expand],
-    )
-    append_unlock_steps(
-        plan,
-        Unlocks.Polyculture,
-        "Enable Hay and Carrot companion yields",
-        [Unlocks.Carrots, Unlocks.Trees],
-    )
-    append_unlock_steps(
-        plan,
-        Unlocks.Megafarm,
-        "Enable parallel reset-safe workers",
-        [Unlocks.Expand, Unlocks.Polyculture],
-    )
-    append_unlock_steps(
-        plan, Unlocks.Mazes, "Enable reusable maze gold production", [Unlocks.Plant, Unlocks.Expand]
-    )
-    append_unlock_steps(
-        plan, Unlocks.Dinosaurs, "Enable bounded bone production", [Unlocks.Mazes, Unlocks.Cactus]
-    )
-    append_unlock_steps(
-        plan, Unlocks.Fertilizer, "Enable Weird Substance production", [Unlocks.Cactus]
-    )
-    append_unlock_steps(
-        plan, Unlocks.Speed, "Accelerate the remaining reset stages", [Unlocks.Expand]
-    )
-    append_unlock_steps(
-        plan, Unlocks.Hats, "Enable achievement and reset hat changes", [Unlocks.Plant]
-    )
-    append_unlock_steps(
-        plan,
-        Unlocks.Leaderboard,
-        "Finish reset progression",
-        [Unlocks.Simulation, Unlocks.Megafarm, Unlocks.Dinosaurs],
-    )
+    route = [
+        (Unlocks.Speed, 1, "Accelerate the remaining reset stages", []),
+        (Unlocks.Plant, 1, "Enable crop planting for resource producers", []),
+        (Unlocks.Expand, 1, "Open enough tiles for reset-safe batches", [Unlocks.Plant]),
+        (Unlocks.Expand, 2, "Open enough tiles for reset-safe batches", []),
+        (Unlocks.Speed, 2, "Accelerate the remaining reset stages", []),
+        (Unlocks.Carrots, 1, "Produce Carrots for later unlocks", [Unlocks.Plant, Unlocks.Expand]),
+        (Unlocks.Grass, 2, "Start the first bounded resource producer", [Unlocks.Plant]),
+        (Unlocks.Trees, 1, "Produce Wood for later unlocks", [Unlocks.Plant, Unlocks.Expand]),
+        (Unlocks.Trees, 2, "Produce Wood for later unlocks", []),
+        (Unlocks.Expand, 3, "Open enough tiles for reset-safe batches", []),
+        (Unlocks.Carrots, 2, "Produce Carrots for later unlocks", []),
+        (Unlocks.Speed, 3, "Accelerate the remaining reset stages", []),
+        (Unlocks.Expand, 4, "Open enough tiles for reset-safe batches", []),
+        (Unlocks.Watering, 1, "Maintain water-dependent crops", [Unlocks.Plant, Unlocks.Expand]),
+        (Unlocks.Watering, 2, "Maintain water-dependent crops", []),
+        (Unlocks.Carrots, 3, "Produce Carrots for later unlocks", []),
+        (Unlocks.Grass, 3, "Start the first bounded resource producer", []),
+        (Unlocks.Sunflowers, 1, "Produce Power for accelerated stages", [Unlocks.Watering]),
+        (Unlocks.Fertilizer, 1, "Enable Weird Substance production", [Unlocks.Sunflowers]),
+        (Unlocks.Watering, 3, "Maintain water-dependent crops", []),
+        (Unlocks.Speed, 4, "Accelerate the remaining reset stages", []),
+        (Unlocks.Pumpkins, 1, "Produce Pumpkin batches", [Unlocks.Watering, Unlocks.Expand]),
+        (Unlocks.Watering, 4, "Maintain water-dependent crops", []),
+        (
+            Unlocks.Polyculture,
+            1,
+            "Enable Hay and Carrot companion yields",
+            [Unlocks.Carrots, Unlocks.Trees],
+        ),
+        (Unlocks.Speed, 5, "Accelerate the remaining reset stages", []),
+        (Unlocks.Expand, 5, "Open enough tiles for reset-safe batches", []),
+        (Unlocks.Fertilizer, 2, "Enable Weird Substance production", []),
+        (
+            Unlocks.Mazes,
+            1,
+            "Enable reusable maze gold production",
+            [Unlocks.Plant, Unlocks.Expand],
+        ),
+        (
+            Unlocks.Megafarm,
+            1,
+            "Enable parallel reset-safe workers",
+            [Unlocks.Expand, Unlocks.Polyculture],
+        ),
+        (Unlocks.Trees, 3, "Produce Wood for later unlocks", []),
+        (Unlocks.Trees, 4, "Produce Wood for later unlocks", []),
+        (Unlocks.Carrots, 4, "Produce Carrots for later unlocks", []),
+        (Unlocks.Watering, 5, "Maintain water-dependent crops", []),
+        (Unlocks.Pumpkins, 2, "Produce Pumpkin batches", []),
+        (Unlocks.Pumpkins, 3, "Produce Pumpkin batches", []),
+        (Unlocks.Expand, 6, "Open enough tiles for reset-safe batches", []),
+        (
+            Unlocks.Cactus,
+            1,
+            "Produce Cactus and Weird Substance inputs",
+            [Unlocks.Plant, Unlocks.Expand],
+        ),
+        (Unlocks.Dinosaurs, 1, "Enable bounded bone production", [Unlocks.Mazes, Unlocks.Cactus]),
+        (Unlocks.Dinosaurs, 2, "Enable bounded bone production", []),
+        (Unlocks.Polyculture, 2, "Enable Hay and Carrot companion yields", []),
+        (Unlocks.Mazes, 2, "Enable reusable maze gold production", []),
+        (Unlocks.Mazes, 3, "Enable reusable maze gold production", []),
+        (Unlocks.Megafarm, 2, "Enable parallel reset-safe workers", []),
+        (Unlocks.Megafarm, 3, "Enable parallel reset-safe workers", []),
+        (Unlocks.Grass, 4, "Start the first bounded resource producer", []),
+        (Unlocks.Trees, 5, "Produce Wood for later unlocks", []),
+        (Unlocks.Fertilizer, 3, "Enable Weird Substance production", []),
+        (Unlocks.Fertilizer, 4, "Enable Weird Substance production", []),
+        (Unlocks.Watering, 6, "Maintain water-dependent crops", []),
+        (Unlocks.Carrots, 5, "Produce Carrots for later unlocks", []),
+        (Unlocks.Carrots, 6, "Produce Carrots for later unlocks", []),
+        (Unlocks.Pumpkins, 4, "Produce Pumpkin batches", []),
+        (Unlocks.Pumpkins, 5, "Produce Pumpkin batches", []),
+        (Unlocks.Expand, 7, "Open enough tiles for reset-safe batches", []),
+        (Unlocks.Megafarm, 4, "Enable parallel reset-safe workers", []),
+        (Unlocks.Cactus, 2, "Produce Cactus and Weird Substance inputs", []),
+        (Unlocks.Cactus, 3, "Produce Cactus and Weird Substance inputs", []),
+        (Unlocks.Dinosaurs, 3, "Enable bounded bone production", []),
+        (Unlocks.Dinosaurs, 4, "Enable bounded bone production", []),
+        (Unlocks.Dinosaurs, 5, "Enable bounded bone production", []),
+        (Unlocks.Mazes, 4, "Enable reusable maze gold production", []),
+        (Unlocks.Leaderboard, 1, "Finish reset progression", [Unlocks.Megafarm, Unlocks.Dinosaurs]),
+    ]
+    for unlock_target, target_level, reason, prerequisites in route:
+        append_route_step(plan, unlock_target, target_level, reason, prerequisites)
     return plan
 
 
