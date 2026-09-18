@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T20:19:27.931862+00:00"
+updated: "2026-09-18T20:23:01.377649+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Task 23 complete: added persistent achievement maze workers and manager with stable region-owned jobs, bounded max-drone startup, child spawn fallback to parent jobs, independent parent failure removal, completion-driven maze replacement, and visible failure diagnostics. Scheduler harness covers spawn fallback, healthy-job isolation, replacement, and no shared/barrier state; full just check passed.
+Task 24 static implementation complete: added run_achievement_maze.py with Gold delta and elapsed-time failure diagnostics over the parallel manager, registered its continuous runner, and added hot-loop isolation checks. Full just check passed. Five-seed benchmark reporting, startup-versus-steady mapping measurements, Maze Master throughput, and Big Gold Farmer closure still require live validation.
 
 ## Notes
 
@@ -120,3 +120,7 @@ Task 23 complete: added persistent achievement maze workers and manager with sta
 ### 2026-09-18T20:19:27.931836+00:00
 
 Task 24 static implementation complete: added run_achievement_maze.py with Gold delta and elapsed-time failure diagnostics over the parallel manager, registered its continuous runner, and added hot-loop isolation checks. Full just check passed. Five-seed benchmark reporting, startup-versus-steady mapping measurements, Maze Master throughput, and Big Gold Farmer closure still require live validation.
+
+### 2026-09-18T20:23:01.377635+00:00
+
+Task 25 static implementation complete: added import-safe leaderboard_runs.py with the achievement cactus cycle and exact 33,554,432 termination target, plus run_leaderboard_cactus.py launcher using the leaderboard_runs window and configurable speedup. Harness covers target termination, cycle failure, import isolation, board selection, filename, and speedup; full just check passed. Actual leaderboard completion and Competitive Farming unlock remain in-game validation.
