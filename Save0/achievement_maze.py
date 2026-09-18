@@ -344,3 +344,65 @@ def run_reusable_maze_worker(maze_index: int, relocation_limit=MAZE_REUSE_LIMIT)
         current_y = get_pos_y()
 
     return make_maze_worker_result(completed_relocations, MAZE_WORKER_COMPLETE)
+
+
+def report_maze_worker_failure(job, result) -> None:
+    maze_index, _start_x, _start_y = job
+    quick_print(
+        "Maze worker "
+        + str(maze_index)
+        + " stopped after "
+        + str(result["completed"])
+        + " relocations: "
+        + result["reason"]
+    )
+
+
+def run_maze_worker(job) -> bool:
+    while True:
+        result = run_reusable_maze_worker(job[0])
+        if result["reason"] != MAZE_WORKER_COMPLETE:
+            report_maze_worker_failure(job, result)
+            return False
+
+
+def start_maze_workers(jobs):
+    parent_jobs = []
+    worker_handles = []
+
+    for index in range(len(jobs) - 1):
+        worker = spawn_drone(run_maze_worker, jobs[index])
+        if worker == None:
+            parent_jobs.append(jobs[index])
+        else:
+            worker_handles.append(worker)
+
+    parent_jobs.append(jobs[len(jobs) - 1])
+    return parent_jobs, worker_handles
+
+
+def run_maze_parent_jobs(parent_jobs):
+    active_jobs = []
+    for job in parent_jobs:
+        active_jobs.append(job)
+
+    while len(active_jobs) > 0:
+        for index in range(len(active_jobs) - 1, -1, -1):
+            job = active_jobs[index]
+            result = run_reusable_maze_worker(job[0])
+            if result["reason"] == MAZE_WORKER_COMPLETE:
+                continue
+
+            report_maze_worker_failure(job, result)
+            active_jobs.pop(index)
+
+    return True
+
+
+def run_maze_workers() -> bool:
+    jobs = get_maze_worker_jobs(max_drones())
+    if len(jobs) == 0:
+        return False
+
+    parent_jobs, _worker_handles = start_maze_workers(jobs)
+    return run_maze_parent_jobs(parent_jobs)

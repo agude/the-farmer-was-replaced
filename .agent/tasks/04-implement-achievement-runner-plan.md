@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T20:15:12.536536+00:00"
+updated: "2026-09-18T20:17:16.973919+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Task 21 complete: added reusable maze worker logic with exact creation-plus-relocation Weird Substance budgeting, one-time mapping, measured treasure paths, bounded remapping after blocked moves, 300-success limit, and result reasons distinguishing completion, resource exhaustion, relocation exhaustion, and blocking. Harness covers exact 300 reuse, post-success counting, exhaustion, recovery, and no-action preflight; full just check passed.
+Task 22 complete: added finite run_achievement_recycling.py that invokes one maze worker at region 0 with the 300-relocation limit and prints exactly one completion or failure diagnostic. Registered the imported finite runner and added isolation tests excluding unrelated gold farming; full just check passed.
 
 ## Notes
 
@@ -112,3 +112,7 @@ Task 21 complete: added reusable maze worker logic with exact creation-plus-relo
 ### 2026-09-18T20:15:12.536521+00:00
 
 Task 22 complete: added finite run_achievement_recycling.py that invokes one maze worker at region 0 with the 300-relocation limit and prints exactly one completion or failure diagnostic. Registered the imported finite runner and added isolation tests excluding unrelated gold farming; full just check passed.
+
+### 2026-09-18T20:17:16.973889+00:00
+
+Task 23 complete: added persistent achievement maze workers and manager with stable region-owned jobs, bounded max-drone startup, child spawn fallback to parent jobs, independent parent failure removal, completion-driven maze replacement, and visible failure diagnostics. Scheduler harness covers spawn fallback, healthy-job isolation, replacement, and no shared/barrier state; full just check passed.
