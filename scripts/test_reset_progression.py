@@ -22,6 +22,35 @@ class Unlocks:
     B = "B"
     C = "C"
     Target = "Target"
+    Variables = "Variables"
+    Operators = "Operators"
+    Senses = "Senses"
+    Loops = "Loops"
+    Functions = "Functions"
+    Lists = "Lists"
+    Dictionaries = "Dictionaries"
+    Import = "Import"
+    Timing = "Timing"
+    Utilities = "Utilities"
+    Costs = "Costs"
+    Simulation = "Simulation"
+    Grass = "Grass"
+    Plant = "Plant"
+    Expand = "Expand"
+    Trees = "Trees"
+    Carrots = "Carrots"
+    Watering = "Watering"
+    Pumpkins = "Pumpkins"
+    Cactus = "Cactus"
+    Sunflowers = "Sunflowers"
+    Polyculture = "Polyculture"
+    Megafarm = "Megafarm"
+    Mazes = "Mazes"
+    Dinosaurs = "Dinosaurs"
+    Fertilizer = "Fertilizer"
+    Speed = "Speed"
+    Hats = "Hats"
+    Leaderboard = "Leaderboard"
 
 
 class Items:
@@ -35,6 +64,7 @@ class ResetSimulator:
         self.costs = {}
         self.unlock_results = {}
         self.unlock_calls = []
+        self.cost_reads = []
         self.produce_result = True
         self.produce_amount = 0
 
@@ -43,9 +73,17 @@ class ResetSimulator:
         reset.Items = Items
         reset.num_unlocked = lambda unlock: self.levels.get(unlock, 0)
         reset.num_items = lambda item: self.inventory.get(item, 0)
-        reset.get_cost = lambda unlock: self.costs.get(unlock)
+        reset.get_cost = self.get_cost
         reset.unlock = self.unlock
         reset.produce_item = self.produce_item
+
+    def get_cost(self, unlock):
+        cost = self.costs.get(unlock)
+        self.cost_reads.append((unlock, self.levels.get(unlock, 0)))
+        if isinstance(cost, list):
+            level = self.levels.get(unlock, 0)
+            return cost[min(level, len(cost) - 1)]
+        return cost
 
     def unlock(self, unlock) -> bool:
         self.unlock_calls.append(unlock)
@@ -86,6 +124,49 @@ def test_dependency_cycle_detection() -> None:
     if reset.validate_unlock_plan(multi_cycle):
         raise AssertionError("multi-item unlock cycle was accepted")
 
+    repeated = [
+        (Unlocks.A, 1, "A1", []),
+        (Unlocks.A, 2, "A2", []),
+        (Unlocks.B, 1, "B1", [Unlocks.A]),
+    ]
+    if not reset.validate_unlock_plan(repeated):
+        raise AssertionError("ordered repeated unlock levels were rejected")
+
+    skipped_level = [
+        (Unlocks.A, 1, "A1", []),
+        (Unlocks.A, 3, "A3", []),
+    ]
+    if reset.validate_unlock_plan(skipped_level):
+        raise AssertionError("unlock plan accepted a skipped target level")
+
+
+def test_default_plan_contains_explicit_target_levels() -> None:
+    plan = reset.get_unlock_plan()
+    if not reset.validate_unlock_plan(plan):
+        raise AssertionError("default reset plan is not a valid ordered level plan")
+
+    levels = {}
+    for unlock, target_level, _reason, _prerequisites in plan:
+        if unlock not in levels:
+            levels[unlock] = []
+        levels[unlock].append(target_level)
+
+    expected = {
+        Unlocks.Expand: [1, 2, 3, 4, 5, 6, 7],
+        Unlocks.Speed: [1, 2, 3, 4, 5],
+        Unlocks.Grass: [1, 2, 3, 4],
+        Unlocks.Trees: [1, 2, 3, 4, 5],
+        Unlocks.Carrots: [1, 2, 3, 4, 5, 6],
+        Unlocks.Fertilizer: [1, 2, 3, 4],
+        Unlocks.Mazes: [1, 2, 3, 4],
+        Unlocks.Megafarm: [1, 2, 3, 4],
+        Unlocks.Cactus: [1, 2, 3],
+        Unlocks.Dinosaurs: [1, 2, 3, 4, 5],
+    }
+    for unlock, expected_levels in expected.items():
+        if levels.get(unlock) != expected_levels:
+            raise AssertionError(f"target levels changed for {unlock}: {levels.get(unlock)}")
+
 
 def test_changing_cost_and_overshooting_producer() -> None:
     simulator = ResetSimulator()
@@ -100,6 +181,48 @@ def test_changing_cost_and_overshooting_producer() -> None:
         raise AssertionError("producer did not preserve overshoot for later costs")
     if simulator.unlock_calls != [Unlocks.Target]:
         raise AssertionError("changing live cost caused duplicate purchase attempts")
+
+
+def test_target_level_buys_each_level_with_refreshed_costs() -> None:
+    simulator = ResetSimulator()
+    simulator.install()
+    simulator.costs[Unlocks.Target] = [
+        {Items.Wood: 4},
+        {Items.Wood: 12},
+        {Items.Wood: 30},
+    ]
+    simulator.produce_amount = 10
+
+    result = reset.unlock_one(Unlocks.Target, [], 3)
+    if result["status"] != reset.UNLOCK_SUCCESS:
+        raise AssertionError(f"target level was not reached: {result}")
+    if simulator.levels[Unlocks.Target] != 3:
+        raise AssertionError("target-level purchase stopped at the first level")
+    if simulator.unlock_calls != [Unlocks.Target, Unlocks.Target, Unlocks.Target]:
+        raise AssertionError("target-level purchase did not buy each level")
+    if simulator.cost_reads != [
+        (Unlocks.Target, 0),
+        (Unlocks.Target, 0),
+        (Unlocks.Target, 1),
+        (Unlocks.Target, 1),
+        (Unlocks.Target, 2),
+        (Unlocks.Target, 2),
+    ]:
+        raise AssertionError("target-level purchase reused a stale cost")
+
+
+def test_nonzero_level_does_not_satisfy_higher_target() -> None:
+    simulator = ResetSimulator()
+    simulator.install()
+    simulator.levels[Unlocks.Target] = 1
+    simulator.costs[Unlocks.Target] = [{Items.Wood: 1}, {Items.Wood: 2}]
+    simulator.produce_amount = 2
+
+    result = reset.unlock_one(Unlocks.Target, [], 2)
+    if result["status"] != reset.UNLOCK_SUCCESS:
+        raise AssertionError("higher target level was not purchased")
+    if simulator.unlock_calls != [Unlocks.Target]:
+        raise AssertionError("already-owned level was purchased again")
 
 
 def test_failed_purchase_is_visible() -> None:
@@ -144,7 +267,10 @@ def test_fastest_reset_does_not_depend_on_hidden_top_hat() -> None:
 
 def main() -> None:
     test_dependency_cycle_detection()
+    test_default_plan_contains_explicit_target_levels()
     test_changing_cost_and_overshooting_producer()
+    test_target_level_buys_each_level_with_refreshed_costs()
+    test_nonzero_level_does_not_satisfy_higher_target()
     test_failed_purchase_is_visible()
     test_no_progress_guard_prevents_spin()
     test_missing_prerequisite_is_visible()

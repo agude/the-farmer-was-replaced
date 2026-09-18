@@ -14,77 +14,180 @@ UNLOCK_PURCHASE_FAILED = "purchase_failed"
 UNLOCK_CYCLE = "cycle"
 
 
+def get_target_level(unlock_target) -> int:
+    if unlock_target == Unlocks.Expand:
+        return 7
+    if unlock_target == Unlocks.Speed:
+        return 5
+    if unlock_target == Unlocks.Grass:
+        return 4
+    if unlock_target == Unlocks.Trees:
+        return 5
+    if unlock_target == Unlocks.Carrots:
+        return 6
+    if unlock_target == Unlocks.Watering:
+        return 6
+    if unlock_target == Unlocks.Pumpkins:
+        return 5
+    if unlock_target == Unlocks.Cactus:
+        return 3
+    if unlock_target == Unlocks.Polyculture:
+        return 2
+    if unlock_target == Unlocks.Megafarm:
+        return 4
+    if unlock_target == Unlocks.Mazes:
+        return 4
+    if unlock_target == Unlocks.Dinosaurs:
+        return 5
+    if unlock_target == Unlocks.Fertilizer:
+        return 4
+
+    return 1
+
+
+def append_unlock_steps(plan, unlock_target, reason, prerequisites) -> None:
+    target_level = get_target_level(unlock_target)
+    for level in range(1, target_level + 1):
+        level_reason = reason
+        if level > 1:
+            level_reason = reason + " (level " + str(level) + ")"
+
+        level_prerequisites = prerequisites
+        if level > 1:
+            level_prerequisites = []
+        plan.append((unlock_target, level, level_reason, level_prerequisites))
+
+
 def get_unlock_plan():
-    return [
-        (Unlocks.Variables, "Track reset state with variables", []),
-        (Unlocks.Operators, "Compare live inventory and unlock levels", [Unlocks.Variables]),
-        (Unlocks.Senses, "Read the farm state before planting", [Unlocks.Operators]),
-        (Unlocks.Loops, "Repeat bounded production and purchase attempts", [Unlocks.Operators]),
-        (Unlocks.Functions, "Reuse bounded reset-safe producers", [Unlocks.Loops]),
-        (Unlocks.Lists, "Store explicit progression queues", [Unlocks.Functions]),
-        (Unlocks.Dictionaries, "Store live multi-item costs", [Unlocks.Lists]),
-        (Unlocks.Import, "Load reset-safe shared farmers", [Unlocks.Functions]),
-        (Unlocks.Timing, "Measure bounded reset stages", [Unlocks.Functions]),
-        (Unlocks.Utilities, "Use reusable game utilities", [Unlocks.Functions]),
-        (Unlocks.Costs, "Read unlock costs at runtime", [Unlocks.Variables]),
-        (Unlocks.Simulation, "Rehearse progression without live mutation", [Unlocks.Costs]),
-        (Unlocks.Grass, "Start the first bounded resource producer", [Unlocks.Variables]),
-        (Unlocks.Plant, "Enable crop planting for resource producers", [Unlocks.Grass]),
-        (Unlocks.Expand, "Open enough tiles for reset-safe batches", [Unlocks.Plant]),
-        (Unlocks.Trees, "Produce Wood for later unlocks", [Unlocks.Plant, Unlocks.Expand]),
-        (Unlocks.Carrots, "Produce Carrots for later unlocks", [Unlocks.Plant, Unlocks.Expand]),
-        (Unlocks.Watering, "Maintain water-dependent crops", [Unlocks.Plant, Unlocks.Expand]),
-        (Unlocks.Pumpkins, "Produce Pumpkin batches", [Unlocks.Watering, Unlocks.Expand]),
-        (
-            Unlocks.Cactus,
-            "Produce Cactus and Weird Substance inputs",
-            [Unlocks.Plant, Unlocks.Expand],
-        ),
-        (
-            Unlocks.Sunflowers,
-            "Produce Power for accelerated stages",
-            [Unlocks.Watering, Unlocks.Expand],
-        ),
-        (
-            Unlocks.Polyculture,
-            "Enable Hay and Carrot companion yields",
-            [Unlocks.Carrots, Unlocks.Trees],
-        ),
-        (
-            Unlocks.Megafarm,
-            "Enable parallel reset-safe workers",
-            [Unlocks.Expand, Unlocks.Polyculture],
-        ),
-        (Unlocks.Mazes, "Enable reusable maze gold production", [Unlocks.Plant, Unlocks.Expand]),
-        (Unlocks.Dinosaurs, "Enable bounded bone production", [Unlocks.Mazes, Unlocks.Cactus]),
-        (Unlocks.Fertilizer, "Enable Weird Substance production", [Unlocks.Cactus]),
-        (Unlocks.Speed, "Accelerate the remaining reset stages", [Unlocks.Expand]),
-        (Unlocks.Hats, "Enable achievement and reset hat changes", [Unlocks.Plant]),
-        (
-            Unlocks.Leaderboard,
-            "Finish reset progression",
-            [Unlocks.Simulation, Unlocks.Megafarm, Unlocks.Dinosaurs],
-        ),
-    ]
+    plan = []
+    append_unlock_steps(plan, Unlocks.Variables, "Track reset state with variables", [])
+    append_unlock_steps(
+        plan,
+        Unlocks.Operators,
+        "Compare live inventory and unlock levels",
+        [Unlocks.Variables],
+    )
+    append_unlock_steps(
+        plan, Unlocks.Senses, "Read the farm state before planting", [Unlocks.Operators]
+    )
+    append_unlock_steps(
+        plan, Unlocks.Loops, "Repeat bounded production and purchase attempts", [Unlocks.Operators]
+    )
+    append_unlock_steps(
+        plan, Unlocks.Functions, "Reuse bounded reset-safe producers", [Unlocks.Loops]
+    )
+    append_unlock_steps(
+        plan, Unlocks.Lists, "Store explicit progression queues", [Unlocks.Functions]
+    )
+    append_unlock_steps(plan, Unlocks.Dictionaries, "Store live multi-item costs", [Unlocks.Lists])
+    append_unlock_steps(plan, Unlocks.Import, "Load reset-safe shared farmers", [Unlocks.Functions])
+    append_unlock_steps(plan, Unlocks.Timing, "Measure bounded reset stages", [Unlocks.Functions])
+    append_unlock_steps(plan, Unlocks.Utilities, "Use reusable game utilities", [Unlocks.Functions])
+    append_unlock_steps(plan, Unlocks.Costs, "Read unlock costs at runtime", [Unlocks.Variables])
+    append_unlock_steps(
+        plan,
+        Unlocks.Simulation,
+        "Rehearse progression without live mutation",
+        [Unlocks.Costs],
+    )
+    append_unlock_steps(
+        plan, Unlocks.Grass, "Start the first bounded resource producer", [Unlocks.Variables]
+    )
+    append_unlock_steps(
+        plan, Unlocks.Plant, "Enable crop planting for resource producers", [Unlocks.Grass]
+    )
+    append_unlock_steps(
+        plan, Unlocks.Expand, "Open enough tiles for reset-safe batches", [Unlocks.Plant]
+    )
+    append_unlock_steps(
+        plan, Unlocks.Trees, "Produce Wood for later unlocks", [Unlocks.Plant, Unlocks.Expand]
+    )
+    append_unlock_steps(
+        plan, Unlocks.Carrots, "Produce Carrots for later unlocks", [Unlocks.Plant, Unlocks.Expand]
+    )
+    append_unlock_steps(
+        plan, Unlocks.Watering, "Maintain water-dependent crops", [Unlocks.Plant, Unlocks.Expand]
+    )
+    append_unlock_steps(
+        plan, Unlocks.Pumpkins, "Produce Pumpkin batches", [Unlocks.Watering, Unlocks.Expand]
+    )
+    append_unlock_steps(
+        plan,
+        Unlocks.Cactus,
+        "Produce Cactus and Weird Substance inputs",
+        [Unlocks.Plant, Unlocks.Expand],
+    )
+    append_unlock_steps(
+        plan,
+        Unlocks.Sunflowers,
+        "Produce Power for accelerated stages",
+        [Unlocks.Watering, Unlocks.Expand],
+    )
+    append_unlock_steps(
+        plan,
+        Unlocks.Polyculture,
+        "Enable Hay and Carrot companion yields",
+        [Unlocks.Carrots, Unlocks.Trees],
+    )
+    append_unlock_steps(
+        plan,
+        Unlocks.Megafarm,
+        "Enable parallel reset-safe workers",
+        [Unlocks.Expand, Unlocks.Polyculture],
+    )
+    append_unlock_steps(
+        plan, Unlocks.Mazes, "Enable reusable maze gold production", [Unlocks.Plant, Unlocks.Expand]
+    )
+    append_unlock_steps(
+        plan, Unlocks.Dinosaurs, "Enable bounded bone production", [Unlocks.Mazes, Unlocks.Cactus]
+    )
+    append_unlock_steps(
+        plan, Unlocks.Fertilizer, "Enable Weird Substance production", [Unlocks.Cactus]
+    )
+    append_unlock_steps(
+        plan, Unlocks.Speed, "Accelerate the remaining reset stages", [Unlocks.Expand]
+    )
+    append_unlock_steps(
+        plan, Unlocks.Hats, "Enable achievement and reset hat changes", [Unlocks.Plant]
+    )
+    append_unlock_steps(
+        plan,
+        Unlocks.Leaderboard,
+        "Finish reset progression",
+        [Unlocks.Simulation, Unlocks.Megafarm, Unlocks.Dinosaurs],
+    )
+    return plan
+
+
+def unpack_plan_entry(entry):
+    if len(entry) == 3:
+        unlock_target, reason, prerequisites = entry
+        return unlock_target, 1, reason, prerequisites
+
+    return entry
 
 
 def get_plan_unlocks(plan):
     unlocks = []
-    for unlock, _reason, _prerequisites in plan:
-        unlocks.append(unlock)
+    for entry in plan:
+        unlock_target, _target_level, _reason, _prerequisites = unpack_plan_entry(entry)
+        if unlock_target not in unlocks:
+            unlocks.append(unlock_target)
     return unlocks
 
 
 def validate_unlock_plan(plan) -> bool:
     planned_unlocks = get_plan_unlocks(plan)
 
-    for index in range(len(planned_unlocks)):
-        for later_index in range(index + 1, len(planned_unlocks)):
-            if planned_unlocks[index] == planned_unlocks[later_index]:
-                return False
-
     remaining = []
+    last_levels = {}
     for entry in plan:
+        unlock, target_level, _reason, _prerequisites = unpack_plan_entry(entry)
+        if target_level <= 0:
+            return False
+        if unlock in last_levels and target_level != last_levels[unlock] + 1:
+            return False
+        last_levels[unlock] = target_level
         remaining.append(entry)
 
     resolved = []
@@ -92,17 +195,19 @@ def validate_unlock_plan(plan) -> bool:
         resolved_one = False
         next_remaining = []
 
-        for unlock, _reason, prerequisites in remaining:
+        for entry in remaining:
+            unlock, _target_level, _reason, prerequisites = unpack_plan_entry(entry)
             prerequisites_ready = True
             for prerequisite in prerequisites:
                 if prerequisite in planned_unlocks and prerequisite not in resolved:
                     prerequisites_ready = False
 
             if prerequisites_ready:
-                resolved.append(unlock)
+                if unlock not in resolved:
+                    resolved.append(unlock)
                 resolved_one = True
             else:
-                next_remaining.append((unlock, _reason, prerequisites))
+                next_remaining.append(entry)
 
         if not resolved_one:
             return False
@@ -145,14 +250,18 @@ def prerequisites_are_ready(prerequisites) -> bool:
     return True
 
 
-def unlock_one(unlock_target, prerequisites=None):
-    if num_unlocked(unlock_target) > 0:
+def unlock_one(unlock_target, prerequisites=None, target_level=1):
+    if num_unlocked(unlock_target) >= target_level:
         return make_unlock_result(unlock_target, UNLOCK_ALREADY_COMPLETE)
 
     if prerequisites != None and not prerequisites_are_ready(prerequisites):
         return make_unlock_result(unlock_target, UNLOCK_MISSING_PREREQUISITE)
 
-    for _attempt in range(MAX_UNLOCK_ATTEMPTS):
+    attempts_without_progress = 0
+    while num_unlocked(unlock_target) < target_level:
+        if attempts_without_progress >= MAX_UNLOCK_ATTEMPTS:
+            return make_unlock_result(unlock_target, UNLOCK_NO_PROGRESS)
+
         cost = get_live_unlock_cost(unlock_target)
         if cost == None:
             return make_unlock_result(unlock_target, UNLOCK_MISSING_COST)
@@ -164,18 +273,21 @@ def unlock_one(unlock_target, prerequisites=None):
             if not produce_item(missing_item, required_amount):
                 return make_unlock_result(unlock_target, UNLOCK_NO_PROGRESS)
             if num_items(missing_item) <= before_amount:
-                return make_unlock_result(unlock_target, UNLOCK_NO_PROGRESS)
+                attempts_without_progress += 1
+            else:
+                attempts_without_progress = 0
             continue
 
-        if unlock(unlock_target) and num_unlocked(unlock_target) > 0:
+        before_level = num_unlocked(unlock_target)
+        unlock(unlock_target)
+        current_level = num_unlocked(unlock_target)
+        if current_level >= target_level:
             return make_unlock_result(unlock_target, UNLOCK_SUCCESS)
+        if current_level <= before_level:
+            return make_unlock_result(unlock_target, UNLOCK_PURCHASE_FAILED)
+        attempts_without_progress = 0
 
-        if num_unlocked(unlock_target) > 0:
-            return make_unlock_result(unlock_target, UNLOCK_SUCCESS)
-
-        return make_unlock_result(unlock_target, UNLOCK_PURCHASE_FAILED)
-
-    return make_unlock_result(unlock_target, UNLOCK_NO_PROGRESS)
+    return make_unlock_result(unlock_target, UNLOCK_SUCCESS)
 
 
 def run_reset_progression() -> bool:
@@ -187,8 +299,9 @@ def run_reset_progression() -> bool:
         quick_print("Reset unlock plan contains a dependency cycle")
         return False
 
-    for unlock_target, reason, prerequisites in plan:
-        result = unlock_one(unlock_target, prerequisites)
+    for entry in plan:
+        unlock_target, target_level, reason, prerequisites = unpack_plan_entry(entry)
+        result = unlock_one(unlock_target, prerequisites, target_level)
         status = result["status"]
         if status == UNLOCK_SUCCESS or status == UNLOCK_ALREADY_COMPLETE:
             continue
