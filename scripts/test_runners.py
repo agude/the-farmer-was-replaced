@@ -20,6 +20,19 @@ RUNNERS = {
     "run_pumpkins.py": ("pumpkins", "farm_pumpkin_cycle"),
     "run_sunflowers.py": ("sunflowers", "farm_sunflower_cycle"),
 }
+IMPORT_SAFE_IMPLEMENTATIONS = (
+    "achievement_config.py",
+    "achievement_metrics.py",
+)
+SIDE_EFFECT_NAMES = {
+    "clear",
+    "harvest",
+    "leaderboard_run",
+    "plant",
+    "simulate",
+    "spawn_drone",
+    "use_item",
+}
 
 
 def get_runner_loop(tree: ast.Module, filename: str) -> ast.While:
@@ -56,6 +69,26 @@ def assert_cycle_failure_breaks(loop: ast.While, filename: str) -> None:
         raise AssertionError(f"{filename} has no visible hard-failure exit")
 
 
+def assert_import_safe_module(filename: str) -> None:
+    source = (SAVE_DIRECTORY / filename).read_text()
+    tree = ast.parse(source)
+
+    for statement in tree.body:
+        if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            continue
+
+        for node in ast.walk(statement):
+            if not isinstance(node, ast.Call):
+                continue
+            if isinstance(node.func, ast.Name) and node.func.id in SIDE_EFFECT_NAMES:
+                raise AssertionError(f"{filename} performs {node.func.id} at import time")
+
+
+def test_import_safe_achievement_modules() -> None:
+    for filename in IMPORT_SAFE_IMPLEMENTATIONS:
+        assert_import_safe_module(filename)
+
+
 def test_runner_structure() -> None:
     for filename, (module, function) in RUNNERS.items():
         source = (SAVE_DIRECTORY / filename).read_text()
@@ -89,7 +122,8 @@ def test_runner_structure() -> None:
 
 def main() -> None:
     test_runner_structure()
-    print("Passed standalone runner structure and failure-exit tests")
+    test_import_safe_achievement_modules()
+    print("Passed runner structure, failure-exit, and import-safety tests")
 
 
 if __name__ == "__main__":
