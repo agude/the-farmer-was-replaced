@@ -62,8 +62,8 @@ def test_companion_slots_are_owned_and_guards_are_rejected() -> None:
                 world_size,
                 layout.HAY_MODE,
             )
-            if len(companions) != 3:
-                raise AssertionError("each primary region must expose three companion slots")
+            if len(companions) != 24:
+                raise AssertionError("each primary region must expose 24 companion slots")
 
             for x, y in companions:
                 if not layout.is_allowed_companion_coordinate(
@@ -75,8 +75,8 @@ def test_companion_slots_are_owned_and_guards_are_rejected() -> None:
                 ):
                     raise AssertionError("companion slot was not owned by its primary")
 
-            guard_x = primary_x + 2
-            guard_y = primary_y
+            guard_x = primary_x + 3
+            guard_y = primary_y + 3
             if layout.is_allowed_companion_coordinate(
                 guard_x,
                 guard_y,

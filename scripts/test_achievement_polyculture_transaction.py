@@ -30,7 +30,7 @@ class Grounds:
 
 
 class TransactionSimulator:
-    def __init__(self, companion_entity, companion_position=(1, 0), plant_result=True):
+    def __init__(self, companion_entity, companion_position=(4, 3), plant_result=True):
         self.companion_entity = companion_entity
         self.companion_position = companion_position
         self.companions = []
@@ -115,7 +115,7 @@ def test_all_companion_entity_types() -> None:
         simulator = TransactionSimulator(companion_entity)
         simulator.install()
 
-        if not transaction.perform_polculture_transaction(0, 0, transaction.HAY_MODE):
+        if not transaction.perform_polculture_transaction(3, 3, transaction.HAY_MODE):
             raise AssertionError(f"transaction rejected {companion_entity}")
         if simulator.harvest_count != 1:
             raise AssertionError("transaction did not harvest the primary exactly once")
@@ -126,14 +126,14 @@ def test_all_companion_entity_types() -> None:
 def test_ground_conversion_matches_requested_entity() -> None:
     grass_companion = TransactionSimulator(Entities.Grass)
     grass_companion.install()
-    if not transaction.perform_polculture_transaction(0, 0, transaction.HAY_MODE):
+    if not transaction.perform_polculture_transaction(3, 3, transaction.HAY_MODE):
         raise AssertionError("grass companion transaction failed")
     if any(event[0] == "till" for event in grass_companion.events if isinstance(event, tuple)):
         raise AssertionError("grass companion converted an already suitable grassland tile")
 
     carrot_companion = TransactionSimulator(Entities.Carrot)
     carrot_companion.install()
-    if not transaction.perform_polculture_transaction(0, 0, transaction.HAY_MODE):
+    if not transaction.perform_polculture_transaction(3, 3, transaction.HAY_MODE):
         raise AssertionError("carrot companion transaction failed")
     if not any(event[0] == "till" for event in carrot_companion.events):
         raise AssertionError("soil companion did not convert its ground")
@@ -143,28 +143,28 @@ def test_failed_plant_does_not_harvest_primary() -> None:
     simulator = TransactionSimulator(Entities.Carrot, plant_result=False)
     simulator.install()
 
-    if transaction.perform_polculture_transaction(0, 0, transaction.CARROT_MODE):
+    if transaction.perform_polculture_transaction(3, 3, transaction.CARROT_MODE):
         raise AssertionError("unaffordable primary plant reported success")
     if simulator.harvest_count != 0:
         raise AssertionError("failed primary plant harvested a crop")
 
 
 def test_out_of_region_request_is_rejected() -> None:
-    simulator = TransactionSimulator(Entities.Carrot, companion_position=(2, 0))
+    simulator = TransactionSimulator(Entities.Carrot, companion_position=(7, 3))
     simulator.install()
 
-    if transaction.perform_polculture_transaction(0, 0, transaction.HAY_MODE):
+    if transaction.perform_polculture_transaction(3, 3, transaction.HAY_MODE):
         raise AssertionError("out-of-template companion request was accepted")
-    if any(event[0] == "plant" and event[1] == (2, 0) for event in simulator.events):
+    if any(event[0] == "plant" and event[1] == (7, 3) for event in simulator.events):
         raise AssertionError("out-of-region companion was planted")
 
 
 def test_invalid_request_can_reroll_own_primary() -> None:
     simulator = TransactionSimulator(Entities.Bush)
-    simulator.companions = [(Entities.Carrot, (2, 0)), (Entities.Bush, (1, 0))]
+    simulator.companions = [(Entities.Carrot, (7, 3)), (Entities.Bush, (4, 3))]
     simulator.install()
 
-    if not transaction.perform_polculture_transaction(0, 0, transaction.HAY_MODE):
+    if not transaction.perform_polculture_transaction(3, 3, transaction.HAY_MODE):
         raise AssertionError("valid companion after bounded reroll was rejected")
     if simulator.harvest_count != 2:
         raise AssertionError("reroll did not harvest only the owned primary")

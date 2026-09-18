@@ -23,11 +23,18 @@ def get_region_anchor(x: int, y: int):
 
 
 def get_primary_position(x: int, y: int):
-    return get_region_anchor(x, y)
+    anchor_x, anchor_y = get_region_anchor(x, y)
+    center_offset = TEMPLATE_SIZE // 2 - 1
+    return anchor_x + center_offset, anchor_y + center_offset
 
 
 def is_primary_tile(x: int, y: int, mode) -> bool:
-    return is_supported_mode(mode) and x % TEMPLATE_SIZE == 0 and y % TEMPLATE_SIZE == 0
+    center_offset = TEMPLATE_SIZE // 2 - 1
+    return (
+        is_supported_mode(mode)
+        and x % TEMPLATE_SIZE == center_offset
+        and y % TEMPLATE_SIZE == center_offset
+    )
 
 
 def is_template_companion_tile(x: int, y: int, mode) -> bool:
@@ -36,7 +43,9 @@ def is_template_companion_tile(x: int, y: int, mode) -> bool:
 
     local_x = x % TEMPLATE_SIZE
     local_y = y % TEMPLATE_SIZE
-    return (local_x == 1 and local_y <= 1) or (local_x == 0 and local_y == 1)
+    center_offset = TEMPLATE_SIZE // 2 - 1
+    distance = abs(local_x - center_offset) + abs(local_y - center_offset)
+    return distance > 0 and distance <= 3
 
 
 def get_layout_role(x: int, y: int, mode):
@@ -88,8 +97,10 @@ def get_companion_positions_for_primary(
 ):
     positions = []
 
-    for x in range(primary_x, primary_x + TEMPLATE_SIZE):
-        for y in range(primary_y, primary_y + TEMPLATE_SIZE):
+    anchor_x, anchor_y = get_region_anchor(primary_x, primary_y)
+
+    for x in range(anchor_x, anchor_x + TEMPLATE_SIZE):
+        for y in range(anchor_y, anchor_y + TEMPLATE_SIZE):
             if x >= world_size or y >= world_size:
                 continue
 
