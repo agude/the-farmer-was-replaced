@@ -58,6 +58,9 @@ class ReuseSimulator:
         reusable.till = lambda: self.events.append("till")
         reusable.plant = self.plant
         reusable.use_item = self.use_item
+        reusable.get_entity_type = lambda: None
+        reusable.can_harvest = lambda: False
+        reusable.harvest = lambda: self.events.append("harvest") or True
         reusable.move_to = self.move_to
         reusable.get_pos_x = lambda: self.position[0]
         reusable.get_pos_y = lambda: self.position[1]

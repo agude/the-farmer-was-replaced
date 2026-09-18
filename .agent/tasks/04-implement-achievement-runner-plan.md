@@ -148,3 +148,9 @@ Task 30 static implementation complete: added the Leaderboard early-success retu
 ### 2026-09-18T20:35:54.599818+00:00
 
 Task 31 static regression complete: added final import-safety checks for all implementation modules, explicit parsing checks for leaderboard/simulation entry points, and runner inventory coverage. Full just check passed. The in-game result log remains unfilled because no game debugger/Stats/leaderboard execution is available in this workspace; live Master rates, leaderboard scores, Fastest Reset acceptance, and Steam achievement closure are not claimed.
+
+### 2026-09-18T20:49:00.000000+00:00
+
+Reset producer audit correction: natural Grass no longer requires the Grass upgrade, and early Bush wood production is gated by Plant rather than Trees. This removes the blank-reset deadlock before Carrots and language unlocks. Focused reset-farmer tests and full `just check` passed; committed as `51b0548`.
+
+Reset-stage audit correction: Gold now repeats funded one-relocation maze workers, Bone now repeats funded general dinosaur cycles, and reusable maze workers remove exhausted mazes before replacement. Focused maze/reset tests and full `just check` passed; reset producers committed as `6d5f595`, maze cleanup is staged for its own atomic commit.

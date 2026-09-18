@@ -278,6 +278,11 @@ def create_reusable_maze(maze_index: int, substance_cost: int) -> bool:
     start_x, start_y = start
     move_to(start_x, start_y)
 
+    current_entity = get_entity_type()
+    if current_entity != None:
+        if not can_harvest() or not harvest():
+            return False
+
     if get_ground_type() != Grounds.Soil:
         till()
 
@@ -343,6 +348,9 @@ def run_reusable_maze_worker(maze_index: int, relocation_limit=MAZE_REUSE_LIMIT)
         current_x = get_pos_x()
         current_y = get_pos_y()
 
+    # Harvesting away from the treasure removes an exhausted maze so the
+    # worker can create its replacement in the same owned region.
+    harvest()
     return make_maze_worker_result(completed_relocations, MAZE_WORKER_COMPLETE)
 
 
