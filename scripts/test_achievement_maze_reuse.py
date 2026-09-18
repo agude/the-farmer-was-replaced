@@ -19,6 +19,7 @@ import achievement_maze as reusable  # noqa: E402
 
 class Entities:
     Bush = "Bush"
+    Treasure = "Treasure"
 
 
 class Grounds:
@@ -46,6 +47,8 @@ class ReuseSimulator:
         self.find_calls = 0
         self.follow_calls = 0
         self.follow_results = []
+        self.treasure_present = False
+        self.missing_treasure = False
 
     def install(self) -> None:
         reusable.Entities = Entities
@@ -58,7 +61,7 @@ class ReuseSimulator:
         reusable.till = lambda: self.events.append("till")
         reusable.plant = self.plant
         reusable.use_item = self.use_item
-        reusable.get_entity_type = lambda: None
+        reusable.get_entity_type = self.get_entity_type
         reusable.can_harvest = lambda: False
         reusable.harvest = lambda: self.events.append("harvest") or True
         reusable.move_to = self.move_to
@@ -76,6 +79,11 @@ class ReuseSimulator:
         self.events.append("plant")
         return self.plant_result
 
+    def get_entity_type(self):
+        if self.treasure_present and not self.missing_treasure:
+            return Entities.Treasure
+        return None
+
     def use_item(self, item, amount) -> bool:
         self.use_item_calls.append((item, amount))
         if self.fail_use_call == len(self.use_item_calls):
@@ -87,6 +95,7 @@ class ReuseSimulator:
 
     def map_maze(self, _maze_index, _start_x, _start_y):
         self.map_calls += 1
+        self.treasure_present = True
         return {"edges": {}, "tiles": []}
 
     def find_treasure_path(self, _maze_map, _start_x, _start_y):
@@ -162,6 +171,16 @@ def test_exhaustion_and_blocked_move_recovery_are_distinct() -> None:
         raise AssertionError("blocked move did not trigger one bounded remap")
 
 
+def test_missing_treasure_is_not_counted_as_a_relocation() -> None:
+    simulator = ReuseSimulator(16)
+    simulator.missing_treasure = True
+    simulator.install()
+
+    result = reusable.run_reusable_maze_worker(0, 1)
+    if result != {"completed": 0, "reason": reusable.MAZE_WORKER_TREASURE_MISSING}:
+        raise AssertionError(f"missing treasure was counted: {result}")
+
+
 def test_preflight_rejects_missing_budget_without_actions() -> None:
     simulator = ReuseSimulator(0)
     simulator.install()
@@ -176,6 +195,7 @@ def main() -> None:
     test_exact_cost_and_three_hundred_successes()
     test_counter_advances_only_after_successful_relocation()
     test_exhaustion_and_blocked_move_recovery_are_distinct()
+    test_missing_treasure_is_not_counted_as_a_relocation()
     test_preflight_rejects_missing_budget_without_actions()
     print("Passed reusable maze cost, 300-relocation, counter, exhaustion, and recovery tests")
 

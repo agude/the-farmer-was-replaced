@@ -16,6 +16,7 @@ MAZE_WORKER_COMPLETE = "complete"
 MAZE_WORKER_RESOURCE_EXHAUSTED = "resource_exhausted"
 MAZE_WORKER_RELOCATIONS_EXHAUSTED = "relocations_exhausted"
 MAZE_WORKER_BLOCKED = "blocked"
+MAZE_WORKER_TREASURE_MISSING = "treasure_missing"
 
 
 def is_valid_maze_index(maze_index: int) -> bool:
@@ -521,6 +522,12 @@ def run_reusable_maze_worker(maze_index: int, relocation_limit=MAZE_REUSE_LIMIT)
                     MAZE_WORKER_RELOCATIONS_EXHAUSTED,
                 )
             return make_maze_worker_result(completed_relocations, MAZE_WORKER_BLOCKED)
+
+        if get_entity_type() != Entities.Treasure:
+            return make_maze_worker_result(
+                completed_relocations,
+                MAZE_WORKER_TREASURE_MISSING,
+            )
 
         if not use_item(Items.Weird_Substance, substance_cost):
             return make_maze_worker_result(
