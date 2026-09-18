@@ -19,6 +19,10 @@ RUNNERS = {
     "run_cactus.py": ("cactus", "farm_cactus_patch"),
     "run_pumpkins.py": ("pumpkins", "farm_pumpkin_cycle"),
     "run_sunflowers.py": ("sunflowers", "farm_sunflower_cycle"),
+    "run_achievement_cactus.py": (
+        "achievement_cactus",
+        "farm_achievement_cactus_cycle",
+    ),
 }
 FINITE_RUNNERS = {
     "run_achievement_healer.py": "run_healer",
