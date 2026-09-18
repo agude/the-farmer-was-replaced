@@ -1,5 +1,6 @@
 """Synchronized full-field pumpkin cycle for Pumpkin Master."""
 
+from achievement_config import DEBUG_OUTPUT
 from navigation import move_to
 from parallel_farming import dispatch_indexed_jobs
 from planting import ensure_soil
@@ -72,6 +73,11 @@ def harvest_ready_field(size: int) -> bool:
     return True
 
 
+def report_phase_ticks(label, starting_tick) -> None:
+    if DEBUG_OUTPUT:
+        quick_print(label + " ticks " + str(get_tick_count() - starting_tick))
+
+
 def farm_achievement_pumpkin_cycle() -> bool:
     size = get_world_size()
     rows = []
@@ -79,10 +85,15 @@ def farm_achievement_pumpkin_cycle() -> bool:
     for row_y in range(size):
         rows.append(row_y)
 
+    planting_start = get_tick_count()
     results = dispatch_indexed_jobs(rows, grow_pumpkin_row_job)
+    report_phase_ticks("Pumpkin planting/repair", planting_start)
 
     for result in results:
         if not result:
             return False
 
-    return harvest_ready_field(size)
+    harvest_start = get_tick_count()
+    harvest_succeeded = harvest_ready_field(size)
+    report_phase_ticks("Pumpkin harvest", harvest_start)
+    return harvest_succeeded

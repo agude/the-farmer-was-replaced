@@ -81,6 +81,8 @@ class PumpkinSimulator:
         self.inventory = {Items.Water: 1000}
         self.events = []
         self.harvest_calls = 0
+        self.tick_count = 0
+        self.debug_messages = []
 
         for x in range(size):
             for y in range(size):
@@ -104,6 +106,8 @@ class PumpkinSimulator:
         achievement_pumpkin.num_items = self.num_items
         achievement_pumpkin.use_item = self.use_item
         achievement_pumpkin.harvest = self.harvest
+        achievement_pumpkin.get_tick_count = self.get_tick_count
+        achievement_pumpkin.quick_print = self.quick_print
         achievement_pumpkin.Entities = Entities
         achievement_pumpkin.Grounds = Grounds
         achievement_pumpkin.Items = Items
@@ -163,6 +167,16 @@ class PumpkinSimulator:
         self.harvest_calls += 1
         self.events.append("harvest")
 
+        for position in self.entities:
+            self.entities[position] = None
+            self.mature[position] = False
+
+    def get_tick_count(self) -> int:
+        return self.tick_count
+
+    def quick_print(self, message) -> None:
+        self.debug_messages.append(message)
+
 
 def test_rows_cover_full_world_and_repair_dead_pumpkins() -> None:
     simulator = PumpkinSimulator(4, dead_positions=[(1, 2)])
@@ -217,11 +231,52 @@ def test_failed_row_blocks_bulk_harvest() -> None:
         raise AssertionError("coordinator did not join the failed worker")
 
 
+def test_two_consecutive_cycles_need_no_clear() -> None:
+    simulator = PumpkinSimulator(2)
+    dispatch = DispatchSimulator(0)
+    dispatch.install()
+    simulator.install()
+
+    if not achievement_pumpkin.farm_achievement_pumpkin_cycle():
+        raise AssertionError("first consecutive pumpkin cycle failed")
+    if not achievement_pumpkin.farm_achievement_pumpkin_cycle():
+        raise AssertionError("second consecutive pumpkin cycle failed")
+
+    if simulator.harvest_calls != 2:
+        raise AssertionError("consecutive cycles did not harvest twice")
+    if any(event == "clear" for event in simulator.events):
+        raise AssertionError("consecutive pumpkin cycles called clear")
+
+
+def test_debug_phase_totals() -> None:
+    simulator = PumpkinSimulator(1)
+    dispatch = DispatchSimulator(0)
+    dispatch.install()
+    simulator.install()
+    achievement_pumpkin.DEBUG_OUTPUT = True
+
+    try:
+        if not achievement_pumpkin.farm_achievement_pumpkin_cycle():
+            raise AssertionError("debug pumpkin cycle reported failure")
+    finally:
+        achievement_pumpkin.DEBUG_OUTPUT = False
+
+    expected_labels = ("Pumpkin planting/repair", "Pumpkin harvest")
+    for label in expected_labels:
+        if not any(message.startswith(label + " ticks ") for message in simulator.debug_messages):
+            raise AssertionError(f"debug output omitted {label} ticks")
+
+
 def main() -> None:
     test_rows_cover_full_world_and_repair_dead_pumpkins()
     test_water_is_used_once_after_planting()
     test_failed_row_blocks_bulk_harvest()
-    print("Passed synchronized pumpkin rows, dead repair, watering, barrier, and failure tests")
+    test_two_consecutive_cycles_need_no_clear()
+    test_debug_phase_totals()
+    print(
+        "Passed synchronized pumpkin rows, dead repair, watering, consecutive cycles, "
+        "metrics, barrier, and failure tests"
+    )
 
 
 if __name__ == "__main__":

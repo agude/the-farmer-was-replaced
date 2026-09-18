@@ -23,6 +23,10 @@ RUNNERS = {
         "achievement_cactus",
         "farm_achievement_cactus_cycle",
     ),
+    "run_achievement_pumpkin.py": (
+        "achievement_pumpkin",
+        "farm_achievement_pumpkin_cycle",
+    ),
 }
 FINITE_RUNNERS = {
     "run_achievement_healer.py": "run_healer",
