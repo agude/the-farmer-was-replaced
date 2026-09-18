@@ -120,6 +120,9 @@ def test_seed_matrix_runs_all_required_seeds() -> None:
     ]
     if len(calls) != 1 or len(calls[0].args) != 6:
         raise AssertionError("seed matrix must make one six-argument simulate call")
+    for argument in calls[0].args[1:4]:
+        if not isinstance(argument, ast.Dict) or argument.keys:
+            raise AssertionError("seed matrix does not provide fresh empty simulation state")
     if not isinstance(calls[0].args[4], ast.Name) or calls[0].args[4].id != "simulation_seed":
         raise AssertionError("seed matrix does not pass the loop seed to simulate")
 
