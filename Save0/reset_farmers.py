@@ -7,6 +7,7 @@ from dinosaurs import get_apple_cactus_cost
 from dinosaurs import get_full_run_cactus_cost
 from dinosaurs import run_dinosaur_once
 from navigation import move_to
+from planting import ensure_ground_for_entity
 
 
 MAX_PRODUCER_CYCLES = 256
@@ -58,10 +59,12 @@ def ensure_planting_inputs(entity, planting_count: int, input_depth: int) -> boo
     return True
 
 
-def prepare_crop(entity, input_depth: int) -> bool:
+def prepare_crop(entity, input_depth: int, harvest_ready: bool = True) -> bool:
     current_entity = get_entity_type()
     if current_entity == entity:
         if can_harvest():
+            if not harvest_ready:
+                return True
             return harvest()
 
         if num_unlocked(Unlocks.Watering) > 0 and get_water() < 0.2:
@@ -72,13 +75,9 @@ def prepare_crop(entity, input_depth: int) -> bool:
         if not can_harvest() or not harvest():
             return False
 
-    if entity == Entities.Grass:
-        if get_ground_type() == Grounds.Soil:
-            till()
-    elif get_ground_type() != Grounds.Soil:
-        till()
-
     if not ensure_planting_inputs(entity, 1, input_depth):
+        return False
+    if not ensure_ground_for_entity(entity):
         return False
 
     return plant(entity)
@@ -115,7 +114,7 @@ def farm_weird_substance(required_amount: int) -> bool:
         if num_items(Items.Weird_Substance) >= target_amount:
             return True
 
-        if not prepare_crop(Entities.Grass, 0):
+        if not prepare_crop(Entities.Grass, 0, False):
             return False
         if not can_harvest():
             continue

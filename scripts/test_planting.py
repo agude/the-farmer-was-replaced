@@ -21,6 +21,8 @@ import sunflowers  # noqa: E402
 
 
 class Entities:
+    Grass = "Grass"
+    Bush = "Bush"
     Cactus = "Cactus"
     Pumpkin = "Pumpkin"
     Dead_Pumpkin = "Dead Pumpkin"
@@ -30,6 +32,7 @@ class Entities:
 
 
 class Grounds:
+    Grassland = "Grassland"
     Soil = "Soil"
 
 
@@ -96,6 +99,26 @@ class PlantSimulator:
         return False
 
 
+class GroundSimulator:
+    def __init__(self, ground: str) -> None:
+        self.ground = ground
+        self.till_calls = 0
+
+    def install(self) -> None:
+        planting.get_ground_type = self.get_ground_type
+        planting.till = self.till
+
+    def get_ground_type(self):
+        return self.ground
+
+    def till(self) -> None:
+        self.till_calls += 1
+        if self.ground == Grounds.Grassland:
+            self.ground = Grounds.Soil
+        else:
+            self.ground = Grounds.Grassland
+
+
 def test_generic_target_propagates_plant_result() -> None:
     simulator = PlantSimulator(False)
     simulator.install()
@@ -109,6 +132,45 @@ def test_generic_target_propagates_plant_result() -> None:
     simulator.entity = Entities.Carrot
     if not planting.plant_target_entity(Entities.Carrot):
         raise AssertionError("existing target was reported as failed")
+
+
+def test_crop_ground_policy_is_idempotent_for_every_supported_entity() -> None:
+    expected_grounds = {
+        Entities.Grass: Grounds.Grassland,
+        Entities.Bush: Grounds.Grassland,
+        Entities.Tree: Grounds.Grassland,
+        Entities.Carrot: Grounds.Soil,
+        Entities.Pumpkin: Grounds.Soil,
+        Entities.Cactus: Grounds.Soil,
+        Entities.Sunflower: Grounds.Soil,
+    }
+
+    for entity, expected_ground in expected_grounds.items():
+        if planting.get_required_ground(entity) != expected_ground:
+            raise AssertionError(f"wrong ground policy for {entity}")
+
+        for starting_ground in (Grounds.Grassland, Grounds.Soil):
+            simulator = GroundSimulator(starting_ground)
+            simulator.install()
+            if not planting.ensure_ground_for_entity(entity):
+                raise AssertionError(f"ground preparation failed for {entity}")
+            if simulator.ground != expected_ground:
+                raise AssertionError(f"wrong final ground for {entity}: {simulator.ground}")
+            expected_tills = int(starting_ground != expected_ground)
+            if simulator.till_calls != expected_tills:
+                raise AssertionError(f"non-idempotent ground preparation for {entity}")
+
+
+def test_unknown_crop_has_no_ground_policy() -> None:
+    simulator = GroundSimulator(Grounds.Soil)
+    simulator.install()
+
+    if planting.get_required_ground("Unknown") is not None:
+        raise AssertionError("unsupported crop received a ground policy")
+    if planting.ensure_ground_for_entity("Unknown"):
+        raise AssertionError("unsupported crop ground preparation succeeded")
+    if simulator.till_calls:
+        raise AssertionError("unsupported crop changed the ground")
 
 
 def test_crop_plant_helpers_propagate_failure() -> None:
@@ -159,6 +221,8 @@ def test_readiness_stops_after_failed_plant() -> None:
 
 def main() -> None:
     test_generic_target_propagates_plant_result()
+    test_crop_ground_policy_is_idempotent_for_every_supported_entity()
+    test_unknown_crop_has_no_ground_policy()
     test_crop_plant_helpers_propagate_failure()
     test_readiness_stops_after_failed_plant()
     print("Passed planting failure propagation and termination tests")

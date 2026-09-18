@@ -15,6 +15,7 @@ SAVE_DIRECTORY = Path(__file__).resolve().parents[1] / "Save0"
 sys.path.insert(0, str(SAVE_DIRECTORY))
 
 import reset_farmers as farmers  # noqa: E402
+import planting  # noqa: E402
 
 
 class Entities:
@@ -58,17 +59,22 @@ def install() -> None:
     farmers.Entities = Entities
     farmers.Items = Items
     farmers.Unlocks = Unlocks
-    farmers.Grounds = type("Grounds", (), {"Grassland": "Grassland", "Soil": "Soil"})
+    grounds = type("Grounds", (), {"Grassland": "Grassland", "Soil": "Soil"})
+    farmers.Grounds = grounds
+    planting.Entities = Entities
+    planting.Grounds = grounds
     farmers.num_unlocked = lambda _unlock: 1
     farmers.get_world_size = lambda: 4
     farmers.num_items = lambda _item: 0
     farmers.get_cost = lambda _entity: {}
     farmers.move_to = lambda _x, _y: None
     farmers.get_entity_type = lambda: Entities.Grass
+    planting.get_ground_type = lambda: grounds.Grassland
     farmers.can_harvest = lambda: False
     farmers.get_water = lambda: 1
     farmers.use_item = lambda _item: True
     farmers.till = lambda: None
+    planting.till = lambda: None
     farmers.plant = lambda _entity: True
     farmers.harvest = lambda: True
 
@@ -100,6 +106,18 @@ def test_locked_crop_and_unsupported_input_fail_before_actions() -> None:
         raise AssertionError("locked crop producer reported success")
     if farmers.produce_item(Items.Water, 1):
         raise AssertionError("unsupported reset input reported success")
+
+
+def test_fertilizer_preparation_does_not_harvest_mature_grass() -> None:
+    install()
+    harvest_calls = []
+    farmers.can_harvest = lambda: True
+    farmers.harvest = lambda: harvest_calls.append(True) or True
+
+    if not farmers.prepare_crop(Entities.Grass, 0, False):
+        raise AssertionError("mature Grass could not be retained for fertilizing")
+    if harvest_calls:
+        raise AssertionError("fertilizer preparation harvested mature Grass")
 
 
 def test_gold_producer_repeats_funded_maze_batches() -> None:
@@ -171,6 +189,7 @@ def test_controller_uses_reset_farmer_hook() -> None:
 def main() -> None:
     test_crop_mapping_covers_reset_outputs()
     test_locked_crop_and_unsupported_input_fail_before_actions()
+    test_fertilizer_preparation_does_not_harvest_mature_grass()
     test_gold_producer_repeats_funded_maze_batches()
     test_bone_producer_uses_reset_sized_dinosaur_batches()
     test_controller_uses_reset_farmer_hook()

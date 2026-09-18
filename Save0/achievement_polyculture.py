@@ -1,6 +1,7 @@
 """Pure coordinate layout for achievement polyculture workers."""
 
 from navigation import move_to
+from planting import ensure_ground_for_entity
 
 
 HAY_MODE = "Hay"
@@ -130,11 +131,8 @@ def is_supported_companion_entity(entity) -> bool:
 
 
 def plant_entity_for_transaction(entity) -> bool:
-    if entity == Entities.Grass:
-        if get_ground_type() != Grounds.Grassland:
-            till()
-    elif get_ground_type() != Grounds.Soil:
-        till()
+    if not ensure_ground_for_entity(entity):
+        return False
 
     return plant(entity)
 

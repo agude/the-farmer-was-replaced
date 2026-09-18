@@ -15,6 +15,7 @@ SAVE_DIRECTORY = Path(__file__).resolve().parents[1] / "Save0"
 sys.path.insert(0, str(SAVE_DIRECTORY))
 
 import achievement_polyculture as transaction  # noqa: E402
+import planting  # noqa: E402
 
 
 class Entities:
@@ -46,13 +47,17 @@ class TransactionSimulator:
     def install(self) -> None:
         transaction.Entities = Entities
         transaction.Grounds = Grounds
+        planting.Entities = Entities
+        planting.Grounds = Grounds
         transaction.get_entity_type = self.get_entity_type
         transaction.get_ground_type = self.get_ground_type
+        planting.get_ground_type = self.get_ground_type
         transaction.get_companion = self.get_companion
         transaction.get_world_size = lambda: 8
         transaction.move_to = self.move_to
         transaction.plant = self.plant
         transaction.till = self.till
+        planting.till = self.till
         transaction.can_harvest = self.can_harvest
         transaction.harvest = self.harvest
 
