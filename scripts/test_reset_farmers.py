@@ -315,6 +315,53 @@ def test_bone_producer_uses_reset_sized_dinosaur_batches() -> None:
         raise AssertionError("Bone producer did not reset the dinosaur start position")
 
 
+def test_gold_and_bone_stages_preserve_current_world_size() -> None:
+    def run_world_size(world_size: int) -> None:
+        install()
+        state = {Items.Gold: 0, Items.Weird_Substance: 2, Items.Bone: 0, Items.Cactus: 0}
+        gold_world_sizes = []
+        bone_world_sizes = []
+        farmers.get_world_size = lambda: world_size
+        farmers.num_unlocked = lambda _unlock: 1
+        farmers.num_items = lambda item: state.get(item, 0)
+        farmers.get_reusable_maze_substance_budget = lambda _limit: 2
+        farmers.ensure_planting_inputs = lambda _entity, _count, _depth: True
+
+        def run_gold_worker(_maze_index, _relocation_limit):
+            gold_world_sizes.append(farmers.get_world_size())
+            state[Items.Weird_Substance] -= 2
+            state[Items.Gold] += 1
+            return {"reason": farmers.MAZE_WORKER_COMPLETE}
+
+        farmers.run_reusable_maze_worker = run_gold_worker
+        if not farmers.farm_gold(1, 0):
+            raise AssertionError(f"Gold stage failed at world size {world_size}")
+        if gold_world_sizes != [world_size]:
+            raise AssertionError(f"Gold stage lost world size {world_size}")
+
+        state[Items.Cactus] = 0
+        farmers.get_apple_cactus_cost = lambda: 1
+        farmers.get_full_run_cactus_cost = lambda size, _cost: size * size
+        farmers.farm_crop = lambda _item, _entity, _unlock, amount, _depth: (
+            state.update({Items.Cactus: amount}) or True
+        )
+
+        def run_bone_once(run_size):
+            bone_world_sizes.append(run_size)
+            state[Items.Cactus] -= run_size * run_size
+            state[Items.Bone] += 1
+            return True
+
+        farmers.run_dinosaur_once = run_bone_once
+        if not farmers.farm_bones(1, 0):
+            raise AssertionError(f"Bone stage failed at world size {world_size}")
+        if bone_world_sizes != [world_size]:
+            raise AssertionError(f"Bone stage lost world size {world_size}")
+
+    for world_size in (2, 4, 8, 16, 32):
+        run_world_size(world_size)
+
+
 def test_controller_uses_reset_farmer_hook() -> None:
     source = (SAVE_DIRECTORY / "reset_progression.py").read_text()
     if "from reset_farmers import produce_item" not in source:
@@ -341,6 +388,7 @@ def main() -> None:
     test_slow_crop_waits_for_clock_progress_and_stuck_crop_fails()
     test_gold_producer_repeats_funded_maze_batches()
     test_bone_producer_uses_reset_sized_dinosaur_batches()
+    test_gold_and_bone_stages_preserve_current_world_size()
     test_controller_uses_reset_farmer_hook()
     print(
         "Passed reset crop mappings, preconditions, unsupported-input, maze, and dinosaur producer tests"

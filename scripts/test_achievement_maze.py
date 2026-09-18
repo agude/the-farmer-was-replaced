@@ -233,6 +233,38 @@ def test_world_size_and_maze_level_define_owned_regions() -> None:
         raise AssertionError("dynamic maze index claimed a row outside the world")
 
 
+def test_route_world_sizes_have_disjoint_dynamic_maze_layouts() -> None:
+    for world_size, maze_size in ((4, 4), (8, 4), (8, 8), (16, 8), (32, 8), (32, 16)):
+        columns, rows, count = layout.get_maze_layout_dimensions(world_size, maze_size)
+        if count <= 0:
+            raise AssertionError(f"world size {world_size} has no dynamic maze regions")
+
+        owned_coordinates = set()
+        jobs = layout.get_maze_worker_jobs(count + 1, world_size, maze_size)
+        if len(jobs) != count:
+            raise AssertionError(f"dynamic worker count changed for world size {world_size}")
+
+        for maze_index in range(count):
+            bounds = layout.get_maze_bounds(maze_index, world_size, maze_size)
+            for x in range(bounds[0], bounds[2] + 1):
+                for y in range(bounds[1], bounds[3] + 1):
+                    coordinate = (x, y)
+                    if coordinate in owned_coordinates:
+                        raise AssertionError(
+                            f"dynamic maze overlap at world size {world_size}: {coordinate}"
+                        )
+                    owned_coordinates.add(coordinate)
+
+        expected_area = count * maze_size**2
+        if len(owned_coordinates) != expected_area:
+            raise AssertionError(
+                f"dynamic maze coverage changed for world size {world_size}: "
+                + str(len(owned_coordinates))
+                + "/"
+                + str(expected_area)
+            )
+
+
 def main() -> None:
     test_anchors_and_bounds()
     test_centered_bounds_cover_edges_and_corners()
@@ -243,6 +275,7 @@ def main() -> None:
     test_worker_prefixes_are_disjoint()
     test_invalid_and_outside_coordinates()
     test_world_size_and_maze_level_define_owned_regions()
+    test_route_world_sizes_have_disjoint_dynamic_maze_layouts()
     print("Passed disjoint maze anchors, dynamic bounds, coverage, and worker-prefix tests")
 
 
