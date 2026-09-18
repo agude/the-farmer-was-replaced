@@ -20,6 +20,8 @@ from trees import farm_tree_cycle
 POWER_LOW_WATERMARK = POWER_TARGET // 10
 POWER_HIGH_WATERMARK = POWER_TARGET
 POWER_OBSERVED_CONSUMPTION = 0
+POWER_STOCKPILE_ESTABLISHED = False
+POWER_REFILL_ACTIVE = False
 NO_PROGRESS_LIMIT = 2
 WAIT_DIAGNOSTIC_INTERVAL = 10
 ACTION_NONE = "none"
@@ -65,7 +67,37 @@ def get_power_target(cost) -> int:
 
 
 def is_power_stockpile_complete(cost) -> bool:
+    if POWER_STOCKPILE_ESTABLISHED and not needs_item(cost, Items.Power):
+        return True
+
     return num_items(Items.Power) >= get_power_target(cost)
+
+
+def update_power_refill_state(cost) -> bool:
+    # Preserve an established stockpile until the low watermark is crossed.
+    global POWER_REFILL_ACTIVE
+    global POWER_STOCKPILE_ESTABLISHED
+
+    power_amount = num_items(Items.Power)
+    power_target = get_power_target(cost)
+
+    if not POWER_STOCKPILE_ESTABLISHED:
+        if power_amount >= power_target:
+            POWER_STOCKPILE_ESTABLISHED = True
+            POWER_REFILL_ACTIVE = False
+        else:
+            POWER_REFILL_ACTIVE = True
+        return POWER_REFILL_ACTIVE
+
+    if POWER_REFILL_ACTIVE:
+        if power_amount >= power_target:
+            POWER_REFILL_ACTIVE = False
+        return POWER_REFILL_ACTIVE
+
+    if power_amount < get_power_low_watermark() or needs_item(cost, Items.Power):
+        POWER_REFILL_ACTIVE = True
+
+    return POWER_REFILL_ACTIVE
 
 
 def add_protected_balance(protected_inventory, item, amount) -> None:
@@ -535,12 +567,7 @@ def run_wait_action() -> bool:
 
 def perform_next_action(cost) -> bool:
     # Select one bounded action using current protected balances.
-    power_target = get_power_target(cost)
-
-    if num_items(Items.Power) < get_power_low_watermark():
-        return run_required_action(Items.Power, cost)
-
-    if num_items(Items.Power) < power_target:
+    if update_power_refill_state(cost):
         return run_required_action(Items.Power, cost)
 
     if needs_item(cost, Items.Cactus) or needs_item(cost, Items.Weird_Substance):
@@ -625,6 +652,13 @@ def record_power_consumption(before, after) -> None:
 def farm_top_hat() -> bool:
     # Reconcile live costs one bounded action at a time before unlocking.
     global WAIT_ACTION_COUNT
+    global POWER_OBSERVED_CONSUMPTION
+    global POWER_REFILL_ACTIVE
+    global POWER_STOCKPILE_ESTABLISHED
+
+    POWER_OBSERVED_CONSUMPTION = 0
+    POWER_REFILL_ACTIVE = False
+    POWER_STOCKPILE_ESTABLISHED = False
 
     if num_unlocked(Unlocks.Top_Hat) > 0:
         return True
@@ -635,6 +669,7 @@ def farm_top_hat() -> bool:
         quick_print("Top Hat cost unavailable")
         return False
 
+    update_power_refill_state(cost)
     no_progress_count = 0
     WAIT_ACTION_COUNT = 0
 
