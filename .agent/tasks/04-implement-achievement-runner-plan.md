@@ -154,3 +154,5 @@ Task 31 static regression complete: added final import-safety checks for all imp
 Reset producer audit correction: natural Grass no longer requires the Grass upgrade, and early Bush wood production is gated by Plant rather than Trees. This removes the blank-reset deadlock before Carrots and language unlocks. Focused reset-farmer tests and full `just check` passed; committed as `51b0548`.
 
 Reset-stage audit correction: Gold now repeats funded one-relocation maze workers, Bone now repeats funded general dinosaur cycles, and reusable maze workers remove exhausted mazes before replacement. Focused maze/reset tests and full `just check` passed; reset producers committed as `6d5f595`, maze cleanup is staged for its own atomic commit.
+
+Fastest Reset audit correction: removed the hidden Top Hat purchase and prerequisite from reset progression. The reset leaderboard only needs to reach `Unlocks.Leaderboard`; Top Hat remains a separate live-save unlock task. Added a regression check and full `just check` passed.

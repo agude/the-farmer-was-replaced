@@ -102,6 +102,57 @@ def test_locked_crop_and_unsupported_input_fail_before_actions() -> None:
         raise AssertionError("unsupported reset input reported success")
 
 
+def test_gold_producer_repeats_funded_maze_batches() -> None:
+    install()
+    state = {Items.Gold: 0, Items.Weird_Substance: 6}
+    worker_calls = []
+
+    farmers.num_unlocked = lambda _unlock: 1
+    farmers.num_items = lambda item: state.get(item, 0)
+    farmers.get_reusable_maze_substance_budget = lambda _limit: 2
+    farmers.ensure_planting_inputs = lambda _entity, _count, _depth: True
+
+    def run_worker(_maze_index, _relocation_limit):
+        worker_calls.append(True)
+        state[Items.Weird_Substance] -= 2
+        state[Items.Gold] += 2
+        return {"reason": farmers.MAZE_WORKER_COMPLETE}
+
+    farmers.run_reusable_maze_worker = run_worker
+    if not farmers.farm_gold(5, 0):
+        raise AssertionError("Gold producer stopped before reaching its target")
+    if len(worker_calls) != 3:
+        raise AssertionError("Gold producer did not repeat one-relocation maze batches")
+
+
+def test_bone_producer_uses_reset_sized_dinosaur_batches() -> None:
+    install()
+    state = {Items.Bone: 0, Items.Cactus: 0}
+    run_calls = []
+
+    farmers.num_unlocked = lambda _unlock: 1
+    farmers.num_items = lambda item: state.get(item, 0)
+    farmers.get_apple_cactus_cost = lambda: 2
+    farmers.get_full_run_cactus_cost = lambda _size, apple_cost: apple_cost * 4
+
+    def farm_cactus(_item, _entity, _unlock, amount, _depth):
+        state[Items.Cactus] += amount
+        return True
+
+    def run_dinosaur(_size):
+        run_calls.append(True)
+        state[Items.Cactus] -= 8
+        state[Items.Bone] += 5
+        return True
+
+    farmers.farm_crop = farm_cactus
+    farmers.run_dinosaur_once = run_dinosaur
+    if not farmers.farm_bones(11, 0):
+        raise AssertionError("Bone producer stopped before reaching its target")
+    if len(run_calls) != 3:
+        raise AssertionError("Bone producer did not repeat reset-sized dinosaur batches")
+
+
 def test_controller_uses_reset_farmer_hook() -> None:
     source = (SAVE_DIRECTORY / "reset_progression.py").read_text()
     if "from reset_farmers import produce_item" not in source:
@@ -120,6 +171,8 @@ def test_controller_uses_reset_farmer_hook() -> None:
 def main() -> None:
     test_crop_mapping_covers_reset_outputs()
     test_locked_crop_and_unsupported_input_fail_before_actions()
+    test_gold_producer_repeats_funded_maze_batches()
+    test_bone_producer_uses_reset_sized_dinosaur_batches()
     test_controller_uses_reset_farmer_hook()
     print(
         "Passed reset crop mappings, preconditions, unsupported-input, maze, and dinosaur producer tests"

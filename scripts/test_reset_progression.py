@@ -136,12 +136,19 @@ def test_missing_prerequisite_is_visible() -> None:
         raise AssertionError("missing prerequisite was ignored")
 
 
+def test_fastest_reset_does_not_depend_on_hidden_top_hat() -> None:
+    source = (SAVE_DIRECTORY / "reset_progression.py").read_text()
+    if "Unlocks.Top_Hat" in source:
+        raise AssertionError("Fastest Reset still depends on hidden Top Hat progression")
+
+
 def main() -> None:
     test_dependency_cycle_detection()
     test_changing_cost_and_overshooting_producer()
     test_failed_purchase_is_visible()
     test_no_progress_guard_prevents_spin()
     test_missing_prerequisite_is_visible()
+    test_fastest_reset_does_not_depend_on_hidden_top_hat()
     print(
         "Passed reset plan cycles, live costs, overshoot, purchase failure, and no-progress tests"
     )

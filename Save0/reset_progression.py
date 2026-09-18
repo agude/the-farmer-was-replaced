@@ -60,11 +60,10 @@ def get_unlock_plan():
         (Unlocks.Fertilizer, "Enable Weird Substance production", [Unlocks.Cactus]),
         (Unlocks.Speed, "Accelerate the remaining reset stages", [Unlocks.Expand]),
         (Unlocks.Hats, "Enable achievement and reset hat changes", [Unlocks.Plant]),
-        (Unlocks.Top_Hat, "Finish the final item-producer upgrade", [Unlocks.Hats, Unlocks.Costs]),
         (
             Unlocks.Leaderboard,
             "Finish reset progression",
-            [Unlocks.Simulation, Unlocks.Megafarm, Unlocks.Dinosaurs, Unlocks.Top_Hat],
+            [Unlocks.Simulation, Unlocks.Megafarm, Unlocks.Dinosaurs],
         ),
     ]
 
