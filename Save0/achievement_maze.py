@@ -4,10 +4,18 @@ from achievement_config import MAZE_REGION_COLUMNS
 from achievement_config import MAZE_REGION_COUNT
 from achievement_config import MAZE_REGION_ROWS
 from achievement_config import MAZE_REGION_SIZE
+from navigation import move_to
 
 
 MAZE_WORLD_WIDTH = MAZE_REGION_COLUMNS * MAZE_REGION_SIZE
 MAZE_WORLD_HEIGHT = MAZE_REGION_ROWS * MAZE_REGION_SIZE
+MAZE_REUSE_LIMIT = 300
+MAZE_RECOVERY_ATTEMPTS = 2
+
+MAZE_WORKER_COMPLETE = "complete"
+MAZE_WORKER_RESOURCE_EXHAUSTED = "resource_exhausted"
+MAZE_WORKER_RELOCATIONS_EXHAUSTED = "relocations_exhausted"
+MAZE_WORKER_BLOCKED = "blocked"
 
 
 def is_valid_maze_index(maze_index: int) -> bool:
@@ -233,3 +241,106 @@ def follow_maze_path(path) -> bool:
             return False
 
     return True
+
+
+def get_reusable_maze_substance_cost() -> int:
+    maze_level = num_unlocked(Unlocks.Mazes)
+    if maze_level <= 0:
+        return 0
+
+    return MAZE_REGION_SIZE * 2 ** (maze_level - 1)
+
+
+def get_reusable_maze_substance_budget(relocation_limit: int):
+    if relocation_limit < 0:
+        return None
+
+    substance_cost = get_reusable_maze_substance_cost()
+    if substance_cost <= 0:
+        return None
+
+    return substance_cost * (relocation_limit + 1)
+
+
+def can_fund_reusable_maze(relocation_limit: int) -> bool:
+    budget = get_reusable_maze_substance_budget(relocation_limit)
+    if budget == None:
+        return False
+
+    return num_items(Items.Weird_Substance) >= budget
+
+
+def create_reusable_maze(maze_index: int, substance_cost: int) -> bool:
+    start = get_maze_start_position(maze_index)
+    if start == None:
+        return False
+
+    start_x, start_y = start
+    move_to(start_x, start_y)
+
+    if get_ground_type() != Grounds.Soil:
+        till()
+
+    if not plant(Entities.Bush):
+        return False
+
+    return use_item(Items.Weird_Substance, substance_cost)
+
+
+def make_maze_worker_result(completed_relocations: int, reason):
+    return {"completed": completed_relocations, "reason": reason}
+
+
+def run_reusable_maze_worker(maze_index: int, relocation_limit=MAZE_REUSE_LIMIT):
+    if not is_valid_maze_index(maze_index):
+        return make_maze_worker_result(0, MAZE_WORKER_BLOCKED)
+
+    budget = get_reusable_maze_substance_budget(relocation_limit)
+    if budget == None or num_items(Items.Weird_Substance) < budget:
+        return make_maze_worker_result(0, MAZE_WORKER_RESOURCE_EXHAUSTED)
+
+    substance_cost = get_reusable_maze_substance_cost()
+    if not create_reusable_maze(maze_index, substance_cost):
+        return make_maze_worker_result(0, MAZE_WORKER_RESOURCE_EXHAUSTED)
+
+    start_x, start_y = get_maze_start_position(maze_index)
+    maze_map = map_maze(maze_index, start_x, start_y)
+    if maze_map == None:
+        return make_maze_worker_result(0, MAZE_WORKER_BLOCKED)
+
+    current_x, current_y = start_x, start_y
+    completed_relocations = 0
+
+    for _relocation in range(relocation_limit):
+        path_found = False
+        for _recovery in range(MAZE_RECOVERY_ATTEMPTS + 1):
+            path = find_treasure_path(maze_map, current_x, current_y)
+            if path != None and follow_maze_path(path):
+                path_found = True
+                break
+
+            current_x = get_pos_x()
+            current_y = get_pos_y()
+            maze_map = map_maze(maze_index, current_x, current_y)
+            if maze_map == None:
+                break
+
+        if not path_found:
+            if path == None:
+                return make_maze_worker_result(
+                    completed_relocations,
+                    MAZE_WORKER_RELOCATIONS_EXHAUSTED,
+                )
+            return make_maze_worker_result(completed_relocations, MAZE_WORKER_BLOCKED)
+
+        if not use_item(Items.Weird_Substance, substance_cost):
+            return make_maze_worker_result(
+                completed_relocations,
+                MAZE_WORKER_RESOURCE_EXHAUSTED,
+            )
+
+        completed_relocations += 1
+        current_x = get_pos_x()
+        current_y = get_pos_y()
+
+    return make_maze_worker_result(completed_relocations, MAZE_WORKER_COMPLETE)

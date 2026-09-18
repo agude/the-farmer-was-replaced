@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T20:10:46.213595+00:00"
+updated: "2026-09-18T20:13:47.892289+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Task 19 complete: added import-safe achievement_maze.py with 32 deterministic disjoint 4x4 regions, anchor/start/bounds/owner helpers, and prefix worker selection capped at 32. Added coverage and non-overlap tests for every worker count from 1 through 32; full just check passed.
+Task 20 complete: extended achievement_maze.py with bounded iterative DFS mapping, game-compatible list/dictionary graph storage, BFS shortest-path search, measured treasure lookup, and move-result-checked path following. Mapping tests cover loop-free branches, dead ends, later-added edges, unreachable targets, and blocked cached moves; full just check passed.
 
 ## Notes
 
@@ -104,3 +104,7 @@ Task 19 complete: added import-safe achievement_maze.py with 32 deterministic di
 ### 2026-09-18T20:10:46.213579+00:00
 
 Task 20 complete: extended achievement_maze.py with bounded iterative DFS mapping, game-compatible list/dictionary graph storage, BFS shortest-path search, measured treasure lookup, and move-result-checked path following. Mapping tests cover loop-free branches, dead ends, later-added edges, unreachable targets, and blocked cached moves; full just check passed.
+
+### 2026-09-18T20:13:47.892265+00:00
+
+Task 21 complete: added reusable maze worker logic with exact creation-plus-relocation Weird Substance budgeting, one-time mapping, measured treasure paths, bounded remapping after blocked moves, 300-success limit, and result reasons distinguishing completion, resource exhaustion, relocation exhaustion, and blocking. Harness covers exact 300 reuse, post-success counting, exhaustion, recovery, and no-action preflight; full just check passed.
