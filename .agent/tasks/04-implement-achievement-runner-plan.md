@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T20:25:15.947618+00:00"
+updated: "2026-09-18T20:28:23.631707+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Task 26 deferred: cumulative achievement closure, Top Hat validation, remaining unlock purchases, and What? unlock require live game execution and live get_cost/unlock-tree results; repository checks cannot establish them.
+Task 27 complete: added run_simulate_fastest_reset.py as a separate rehearsal launcher with empty unlocks/items/globals, fixed seed 17, configurable speedup 256, and one printed simulated runtime. Static tests verify the six simulate arguments, empty start state, no nested/live operations, and one output; full just check passed.
 
 ## Notes
 
@@ -132,3 +132,7 @@ Task 26 deferred: cumulative achievement closure, Top Hat validation, remaining 
 ### 2026-09-18T20:25:15.947601+00:00
 
 Task 27 complete: added run_simulate_fastest_reset.py as a separate rehearsal launcher with empty unlocks/items/globals, fixed seed 17, configurable speedup 256, and one printed simulated runtime. Static tests verify the six simulate arguments, empty start state, no nested/live operations, and one output; full just check passed.
+
+### 2026-09-18T20:28:23.631692+00:00
+
+Task 28 complete: added import-safe reset_progression.py with explicit unlock reasons/prerequisites, dependency-cycle detection, live cost validation, bounded unlock_one() retries, producer progress proofs, purchase failure diagnostics, and Leaderboard success check. Harness covers direct/multi-item cycles, changing costs, overshoot, failed purchases, missing prerequisites, and no-progress exits; full just check passed.
