@@ -44,6 +44,10 @@ IMPORTED_FINITE_RUNNERS = {
         "achievement_dinosaur",
         "run_achievement_dinosaur_once",
     ),
+    "run_achievement_recycling.py": (
+        "achievement_maze",
+        "run_reusable_maze_worker",
+    ),
 }
 PARSE_ONLY_RUNNERS = {
     "run_achievement_import.py",
