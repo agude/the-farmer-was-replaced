@@ -41,6 +41,10 @@ sunflower-test:
 maze-test:
     uv run scripts/test_maze.py
 
+# Run the CPython achievement maze layout harness.
+achievement-maze-test:
+    uv run scripts/test_achievement_maze.py
+
 # Run the CPython dinosaur-route and policy harness.
 dinosaur-test:
     uv run scripts/test_dinosaurs.py
@@ -165,7 +169,7 @@ achievement-polyculture-workers-test:
 runner-test:
     uv run scripts/test_runners.py
 
-check: lint cactus-test farm-layout-test sunflower-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test hay-test carrot-test tree-test pumpkin-test cactus-cycle-test sunflower-cycle-test resource-cost-test top-hat-test top-hat-entry-test achievement-config-test achievement-metrics-test achievement-healer-test achievement-import-test achievement-stack-overflow-test achievement-cactus-test achievement-cactus-runner-test achievement-pumpkin-test achievement-pumpkin-runner-test achievement-hay-runner-test achievement-carrot-runner-test achievement-dinosaur-test achievement-polyculture-test achievement-polyculture-transaction-test achievement-polyculture-workers-test runner-test
+check: lint cactus-test farm-layout-test sunflower-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test hay-test carrot-test tree-test pumpkin-test cactus-cycle-test sunflower-cycle-test resource-cost-test top-hat-test top-hat-entry-test achievement-config-test achievement-metrics-test achievement-healer-test achievement-import-test achievement-stack-overflow-test achievement-cactus-test achievement-cactus-runner-test achievement-pumpkin-test achievement-pumpkin-runner-test achievement-hay-runner-test achievement-carrot-runner-test achievement-maze-test achievement-dinosaur-test achievement-polyculture-test achievement-polyculture-transaction-test achievement-polyculture-workers-test runner-test
 
 hooks-install:
     ln -sf ../../bin/pre-commit.sh .git/hooks/pre-commit
