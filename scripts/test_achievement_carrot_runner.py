@@ -29,6 +29,7 @@ class Entities:
 class Items:
     Hay = "Hay"
     Wood = "Wood"
+    Carrot = "Carrot"
 
 
 def install_cost_simulator(inventory: dict[str, int]) -> None:
@@ -46,11 +47,11 @@ def install_cost_simulator(inventory: dict[str, int]) -> None:
 
 
 def test_startup_requirement_uses_worst_dynamic_companion() -> None:
-    inventory = {Items.Hay: 4, Items.Wood: 2}
+    inventory = {Items.Hay: 6, Items.Wood: 2}
     install_cost_simulator(inventory)
 
     required = polyculture.get_carrot_startup_requirements(32)
-    if required != {Items.Hay: 4, Items.Wood: 2}:
+    if required != {Items.Hay: 6, Items.Wood: 2}:
         raise AssertionError(f"startup budget was not worst-case bounded: {required}")
     if not polyculture.can_fund_carrot_startup(32):
         raise AssertionError("exact startup budget was rejected")
@@ -58,6 +59,39 @@ def test_startup_requirement_uses_worst_dynamic_companion() -> None:
     inventory[Items.Wood] = 1
     if polyculture.can_fund_carrot_startup(32):
         raise AssertionError("underfunded startup batch was accepted")
+
+
+def test_transaction_requirement_covers_every_live_cost_item() -> None:
+    install_cost_simulator({})
+    requirements = polyculture.get_carrot_transaction_requirements(
+        {Items.Hay: 1, Items.Wood: 2},
+        [
+            {},
+            {Items.Hay: 3},
+            {Items.Wood: 4},
+        ],
+    )
+    if requirements != {Items.Hay: 4, Items.Wood: 6}:
+        raise AssertionError(f"transaction costs omitted an input: {requirements}")
+
+
+def test_startup_requirement_includes_live_carrot_seed_cost() -> None:
+    inventory = {}
+    polyculture.Entities = Entities
+    polyculture.Items = Items
+    polyculture.get_primary_positions = lambda _world_size, _mode: [(3, 3)]
+    polyculture.max_drones = lambda: 1
+    polyculture.get_cost = lambda entity: {
+        Entities.Carrot: {Items.Hay: 1, Items.Carrot: 2},
+        Entities.Grass: {},
+        Entities.Bush: {},
+        Entities.Tree: {Items.Wood: 1},
+    }[entity]
+    polyculture.num_items = lambda item: inventory.get(item, 0)
+
+    required = polyculture.get_carrot_startup_requirements(32)
+    if required != {Items.Hay: 3, Items.Carrot: 6, Items.Wood: 1}:
+        raise AssertionError(f"live Carrot seed cost was omitted: {required}")
 
 
 def get_runner_loop(tree: ast.Module) -> ast.While:
@@ -121,6 +155,8 @@ def test_runner_delegates_carrot_mode_and_preflights() -> None:
 
 def main() -> None:
     test_startup_requirement_uses_worst_dynamic_companion()
+    test_transaction_requirement_covers_every_live_cost_item()
+    test_startup_requirement_includes_live_carrot_seed_cost()
     test_runner_delegates_carrot_mode_and_preflights()
     print("Passed Carrot Master startup budget, mode, preflight, and runner tests")
 

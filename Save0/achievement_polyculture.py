@@ -13,6 +13,8 @@ GUARD_ROLE = "guard"
 
 TEMPLATE_SIZE = 8
 MAX_TRANSACTION_ATTEMPTS = 3
+MAX_PRIMARY_WAIT_CHECKS = 1000000
+MAX_STAGNANT_PRIMARY_CHECKS = 1000
 
 
 def is_supported_mode(mode) -> bool:
@@ -121,6 +123,13 @@ def get_primary_entity(mode):
     return None
 
 
+def water_after_planting() -> bool:
+    if get_water() >= 1 or num_items(Items.Water) <= 0:
+        return True
+
+    return use_item(Items.Water)
+
+
 def is_supported_companion_entity(entity) -> bool:
     return (
         entity == Entities.Grass
@@ -134,7 +143,10 @@ def plant_entity_for_transaction(entity) -> bool:
     if not ensure_ground_for_entity(entity):
         return False
 
-    return plant(entity)
+    if not plant(entity):
+        return False
+
+    return water_after_planting()
 
 
 def establish_primary(primary_entity) -> bool:
@@ -173,10 +185,26 @@ def get_transaction_companion(primary_x: int, primary_y: int, mode):
     return companion_entity, companion_x, companion_y
 
 
-def wait_for_primary() -> bool:
-    for _check in range(MAX_TRANSACTION_ATTEMPTS * 10000):
+def wait_for_primary(primary_entity) -> bool:
+    starting_tick = get_tick_count()
+    last_tick = starting_tick
+    stagnant_checks = 0
+
+    for _check in range(MAX_PRIMARY_WAIT_CHECKS):
+        if get_entity_type() != primary_entity:
+            return False
         if can_harvest():
             return True
+
+        current_tick = get_tick_count()
+        if current_tick == last_tick:
+            stagnant_checks += 1
+        else:
+            last_tick = current_tick
+            stagnant_checks = 0
+
+        if stagnant_checks >= MAX_STAGNANT_PRIMARY_CHECKS:
+            return False
 
     return False
 
@@ -211,7 +239,7 @@ def replace_companion_entity(entity) -> bool:
     if not plant(entity):
         return False
 
-    return True
+    return water_after_planting()
 
 
 def report_transaction_failure(
@@ -325,7 +353,7 @@ def perform_polculture_transaction(primary_x: int, primary_y: int, mode) -> bool
 
         move_to(primary_x, primary_y)
 
-        if not wait_for_primary():
+        if not wait_for_primary(primary_entity):
             return report_transaction_failure(
                 primary_x,
                 primary_y,
@@ -409,18 +437,38 @@ def get_carrot_startup_requirements(world_size: int):
             return None
 
     worker_count = len(jobs)
+    required = get_carrot_transaction_requirements(primary_cost, companion_costs)
+
+    for item in primary_cost:
+        required[item] = required[item] + primary_cost[item]
+
+    for item in required:
+        required[item] = required[item] * worker_count
+
+    return required
+
+
+def get_carrot_transaction_requirements(primary_cost, companion_costs):
     required = {}
-    for item in (Items.Hay, Items.Wood):
-        primary_amount = 0
-        if item in primary_cost:
-            primary_amount = primary_cost[item]
+    companion_requirements = {}
 
-        companion_amount = 0
-        for companion_cost in companion_costs:
-            if item in companion_cost and companion_cost[item] > companion_amount:
-                companion_amount = companion_cost[item]
+    for item in primary_cost:
+        required[item] = primary_cost[item]
 
-        required[item] = (primary_amount + companion_amount) * worker_count
+    for companion_cost in companion_costs:
+        for item in companion_cost:
+            companion_amount = companion_cost[item]
+            if (
+                item not in companion_requirements
+                or companion_amount > companion_requirements[item]
+            ):
+                companion_requirements[item] = companion_amount
+
+    for item in companion_requirements:
+        if item in required:
+            required[item] = required[item] + companion_requirements[item]
+        else:
+            required[item] = companion_requirements[item]
 
     return required
 

@@ -30,6 +30,10 @@ class Grounds:
     Soil = "Soil"
 
 
+class Items:
+    Water = "Water"
+
+
 class TransactionSimulator:
     def __init__(self, companion_entity, companion_position=(4, 3), plant_result=True):
         self.companion_entity = companion_entity
@@ -45,10 +49,14 @@ class TransactionSimulator:
         self.mature = True
         self.fail_companion_plant = False
         self.messages = []
+        self.tick_count = 0
+        self.water = {}
+        self.inventory = {Items.Water: 1000}
 
     def install(self) -> None:
         transaction.Entities = Entities
         transaction.Grounds = Grounds
+        transaction.Items = Items
         planting.Entities = Entities
         planting.Grounds = Grounds
         transaction.get_entity_type = self.get_entity_type
@@ -64,6 +72,10 @@ class TransactionSimulator:
         transaction.harvest = self.harvest
         transaction.clear = self.clear
         transaction.quick_print = self.quick_print
+        transaction.get_water = self.get_water
+        transaction.num_items = self.num_items
+        transaction.use_item = self.use_item
+        transaction.get_tick_count = self.get_tick_count
 
     def move_to(self, x: int, y: int) -> None:
         self.position = (x, y)
@@ -71,6 +83,23 @@ class TransactionSimulator:
 
     def get_entity_type(self):
         return self.entities.get(self.position)
+
+    def get_water(self) -> int:
+        return self.water.get(self.position, 0)
+
+    def num_items(self, item) -> int:
+        return self.inventory.get(item, 0)
+
+    def use_item(self, item) -> bool:
+        if self.inventory.get(item, 0) <= 0:
+            return False
+        self.inventory[item] -= 1
+        self.water[self.position] = 1
+        self.events.append(("water", self.position))
+        return True
+
+    def get_tick_count(self) -> int:
+        return self.tick_count
 
     def get_ground_type(self):
         return self.grounds.get(self.position, Grounds.Grassland)
@@ -155,6 +184,47 @@ def test_ground_conversion_matches_requested_entity() -> None:
         raise AssertionError("carrot companion transaction failed")
     if not any(event[0] == "till" for event in carrot_companion.events):
         raise AssertionError("soil companion did not convert its ground")
+
+
+def test_newly_planted_entities_are_watered_once() -> None:
+    simulator = TransactionSimulator(Entities.Grass)
+    simulator.install()
+
+    if not transaction.plant_entity_for_transaction(Entities.Grass):
+        raise AssertionError("newly planted entity was not established")
+    if [event for event in simulator.events if event[0] == "water"] != [("water", (0, 0))]:
+        raise AssertionError("newly planted entity was not watered once")
+
+
+class SlowGrowthSimulator(TransactionSimulator):
+    def __init__(self, checks_until_ready: int) -> None:
+        super().__init__(Entities.Grass)
+        self.checks_until_ready = checks_until_ready
+        self.entities[(0, 0)] = Entities.Grass
+
+    def can_harvest(self) -> bool:
+        if self.checks_until_ready > 0:
+            self.checks_until_ready -= 1
+            self.tick_count += 1
+            return False
+        return True
+
+
+def test_slow_growth_wait_uses_crop_readiness_and_ticks() -> None:
+    simulator = SlowGrowthSimulator(30001)
+    simulator.install()
+
+    if not transaction.wait_for_primary(Entities.Grass):
+        raise AssertionError("slow-growing primary hit a false readiness timeout")
+
+
+def test_stuck_growth_has_a_bounded_failure() -> None:
+    simulator = SlowGrowthSimulator(0)
+    simulator.install()
+
+    transaction.can_harvest = lambda: False
+    if transaction.wait_for_primary(Entities.Grass):
+        raise AssertionError("stuck primary reported readiness")
 
 
 def test_different_existing_companion_is_replaced() -> None:
@@ -247,6 +317,9 @@ def test_invalid_request_can_reroll_own_primary() -> None:
 def main() -> None:
     test_all_companion_entity_types()
     test_ground_conversion_matches_requested_entity()
+    test_newly_planted_entities_are_watered_once()
+    test_slow_growth_wait_uses_crop_readiness_and_ticks()
+    test_stuck_growth_has_a_bounded_failure()
     test_different_existing_companion_is_replaced()
     test_changing_companion_requests_complete_one_hundred_transactions()
     test_companion_failure_reports_transaction_state()
