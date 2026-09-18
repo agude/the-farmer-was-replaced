@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T19:41:26.954392+00:00"
+updated: "2026-09-18T19:44:07.305566+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Task 8 complete in static/debug scope: replaced achievement cactus sort hot loops with one current/neighbor measurement pair per comparison, shrinking cocktail bounds, direct lane movement, and documented lane return to its start. Added separate planting, row-sort, column-sort, and harvest tick diagnostics gated by DEBUG_OUTPUT; the deterministic 32x32 harness verifies direct movement, measurement pairing, lane returns, and correctness. Full just check passed; live tick totals remain to be recorded during in-game validation.
+Task 9 static implementation complete: added run_achievement_cactus.py as a selectable continuous wrapper that captures its own cactus baseline and reports the produced delta only on cycle failure. Registered it in the runner harness, forbade runner-side fertilizing, and full just check passed. Cactus Master last-60-second rate, cycle ticks, and Big Farmer progress require in-game validation and are not claimed.
 
 ## Notes
 
@@ -56,3 +56,7 @@ Task 8 complete in static/debug scope: replaced achievement cactus sort hot loop
 ### 2026-09-18T19:41:26.954378+00:00
 
 Task 9 static implementation complete: added run_achievement_cactus.py as a selectable continuous wrapper that captures its own cactus baseline and reports the produced delta only on cycle failure. Registered it in the runner harness, forbade runner-side fertilizing, and full just check passed. Cactus Master last-60-second rate, cycle ticks, and Big Farmer progress require in-game validation and are not claimed.
+
+### 2026-09-18T19:44:07.305552+00:00
+
+Task 10 complete: added import-safe achievement_pumpkin.py with one row job per world row, unresolved-position retention, direct empty/dead Pumpkin replacement, one post-plant water action when available, explicit worker failure propagation, row barrier, and one unfertilized bulk harvest. Focused harness covers reduced drone capacity, dead repair, watering, and failed-row harvest blocking. Full just check passed; Task 11 still requires consecutive in-game throughput validation.

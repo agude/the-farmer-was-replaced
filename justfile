@@ -129,11 +129,15 @@ achievement-cactus-test:
 achievement-cactus-runner-test:
     uv run scripts/test_achievement_cactus_runner.py
 
+# Run the CPython synchronized achievement pumpkin harness.
+achievement-pumpkin-test:
+    uv run scripts/test_achievement_pumpkin.py
+
 # Run the AST harness for continuous standalone runners.
 runner-test:
     uv run scripts/test_runners.py
 
-check: lint cactus-test farm-layout-test sunflower-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test hay-test carrot-test tree-test pumpkin-test cactus-cycle-test sunflower-cycle-test resource-cost-test top-hat-test top-hat-entry-test achievement-config-test achievement-metrics-test achievement-healer-test achievement-import-test achievement-stack-overflow-test achievement-cactus-test achievement-cactus-runner-test runner-test
+check: lint cactus-test farm-layout-test sunflower-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test hay-test carrot-test tree-test pumpkin-test cactus-cycle-test sunflower-cycle-test resource-cost-test top-hat-test top-hat-entry-test achievement-config-test achievement-metrics-test achievement-healer-test achievement-import-test achievement-stack-overflow-test achievement-cactus-test achievement-cactus-runner-test achievement-pumpkin-test runner-test
 
 hooks-install:
     ln -sf ../../bin/pre-commit.sh .git/hooks/pre-commit
