@@ -111,7 +111,7 @@ def test_controller_uses_reset_farmer_hook() -> None:
         "farm_gold",
         "farm_bones",
         "run_reusable_maze_worker",
-        "run_achievement_dinosaur_once",
+        "run_dinosaur_once",
     ):
         if required_name not in source:
             raise AssertionError(f"reset farmers lost bounded stage {required_name}")
