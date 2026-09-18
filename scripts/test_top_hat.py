@@ -83,6 +83,8 @@ def reset_inventory() -> None:
     top_hat.POWER_LOW_WATERMARK = 10
     top_hat.POWER_HIGH_WATERMARK = 20
     top_hat.POWER_OBSERVED_CONSUMPTION = 0
+    top_hat.POWER_STOCKPILE_ESTABLISHED = False
+    top_hat.POWER_REFILL_ACTIVE = False
 
 
 def test_already_unlocked_returns_immediately() -> None:
@@ -229,6 +231,120 @@ def test_power_reaches_high_watermark_without_live_power_cost() -> None:
     top_hat.perform_next_action(cost)
     if actions[-1] != Items.Wood:
         raise AssertionError("planner did not leave power mode at the high watermark")
+
+
+def test_initial_power_stockpile_precedes_later_stages() -> None:
+    reset_inventory()
+    inventory[Items.Power] = 15
+    top_hat.get_top_hat_cost = lambda: {Items.Cactus: 1}
+    actions = []
+
+    def produce(item, policy) -> bool:
+        actions.append(item)
+        if item == Items.Power:
+            inventory[Items.Power] = 20
+        else:
+            inventory[item] = 1
+        return True
+
+    top_hat.perform_next_action = REAL_PERFORM_NEXT_ACTION
+    top_hat.run_item_producer = produce
+
+    if not top_hat.farm_top_hat():
+        raise AssertionError("initial power stockpile did not complete")
+
+    if actions[:2] != [Items.Power, Items.Cactus]:
+        raise AssertionError(
+            "planner advanced before establishing the initial power stockpile: "
+            + str(actions)
+        )
+
+
+def test_established_power_between_watermarks_uses_required_resource() -> None:
+    reset_inventory()
+    inventory[Items.Power] = 15
+    top_hat.POWER_STOCKPILE_ESTABLISHED = True
+    actions = []
+    top_hat.run_item_producer = lambda item, policy: actions.append(item) or True
+    top_hat.perform_next_action = REAL_PERFORM_NEXT_ACTION
+
+    if not top_hat.perform_next_action({Items.Wood: 1}):
+        raise AssertionError("planner did not select the required resource")
+
+    if actions[-1] != Items.Wood:
+        raise AssertionError(
+            "established power between watermarks triggered a sunflower cycle"
+        )
+
+
+def test_power_refill_stays_active_until_high_watermark() -> None:
+    reset_inventory()
+    top_hat.POWER_STOCKPILE_ESTABLISHED = True
+    actions = []
+    top_hat.run_item_producer = lambda item, policy: actions.append(item) or True
+    top_hat.perform_next_action = REAL_PERFORM_NEXT_ACTION
+    cost = {Items.Wood: 1}
+
+    inventory[Items.Power] = 9
+    if not top_hat.perform_next_action(cost):
+        raise AssertionError("low power did not start refill mode")
+    if not top_hat.POWER_REFILL_ACTIVE:
+        raise AssertionError("low power did not activate refill mode")
+
+    inventory[Items.Power] = 15
+    if not top_hat.perform_next_action(cost):
+        raise AssertionError("refill mode did not continue below the high watermark")
+    if actions[-1] != Items.Power:
+        raise AssertionError("refill mode stopped between the watermarks")
+
+    inventory[Items.Power] = 20
+    if not top_hat.perform_next_action(cost):
+        raise AssertionError("planner did not resume later-stage work at the target")
+    if top_hat.POWER_REFILL_ACTIVE:
+        raise AssertionError("refill mode remained active at the high watermark")
+    if actions[-1] != Items.Wood:
+        raise AssertionError("planner did not select later-stage work at the target")
+
+
+def test_fertilizer_wait_does_not_restart_power_refill() -> None:
+    reset_inventory()
+    inventory[Items.Power] = 20
+    top_hat.POWER_STOCKPILE_ESTABLISHED = True
+    top_hat.get_maze_substance_cost = lambda: 5
+    actions = []
+
+    def produce(item, policy) -> bool:
+        actions.append(item)
+        return item == Items.Gold
+
+    top_hat.run_item_producer = produce
+    top_hat.perform_next_action = REAL_PERFORM_NEXT_ACTION
+    top_hat.do_a_flip = lambda: inventory.__setitem__(Items.Power, 19)
+
+    if not top_hat.run_wait_action():
+        raise AssertionError("bounded fertilizer wait failed")
+    if not top_hat.perform_next_action({Items.Gold: 1}):
+        raise AssertionError("planner did not resume Gold work after the wait")
+
+    if actions[-1] != Items.Gold:
+        raise AssertionError(
+            "fertilizer wait caused a sunflower cycle above the low watermark"
+        )
+
+
+def test_live_power_cost_overrides_watermark_policy() -> None:
+    reset_inventory()
+    inventory[Items.Power] = 22
+    top_hat.POWER_STOCKPILE_ESTABLISHED = True
+    actions = []
+    top_hat.run_item_producer = lambda item, policy: actions.append(item) or True
+    top_hat.perform_next_action = REAL_PERFORM_NEXT_ACTION
+
+    if not top_hat.perform_next_action({Items.Power: 25, Items.Wood: 1}):
+        raise AssertionError("explicit live Power requirement did not trigger refill")
+
+    if actions[-1] != Items.Power:
+        raise AssertionError("planner ignored an unmet explicit Power cost")
 
 
 def test_power_watermarks_adjust_from_observed_consumption() -> None:
@@ -822,6 +938,11 @@ def main() -> None:
     test_unlock_failure_is_called_once()
     test_policy_priority()
     test_power_reaches_high_watermark_without_live_power_cost()
+    test_initial_power_stockpile_precedes_later_stages()
+    test_established_power_between_watermarks_uses_required_resource()
+    test_power_refill_stays_active_until_high_watermark()
+    test_fertilizer_wait_does_not_restart_power_refill()
+    test_live_power_cost_overrides_watermark_policy()
     test_power_watermarks_adjust_from_observed_consumption()
     test_tree_budget_counts_checkerboard_tiles()
     test_protected_balance_plus_cycle_budget()
