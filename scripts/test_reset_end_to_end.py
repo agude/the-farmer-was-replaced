@@ -112,11 +112,14 @@ def test_reduced_route_reaches_leaderboard_and_resumes_after_failure() -> None:
         raise AssertionError("reduced reset route did not resume after producer recovery")
     if model.levels.get(Unlocks.Leaderboard, 0) != 1:
         raise AssertionError("reduced reset route did not reach Leaderboard level 1")
-    expected_steps = len(reset.get_unlock_plan())
-    if len(model.unlock_calls) != expected_steps:
+    expected_steps = [
+        (unlock_target, target_level)
+        for unlock_target, target_level, _reason, _prerequisites in reset.get_unlock_plan()
+    ]
+    if model.unlock_calls != expected_steps:
         raise AssertionError(
-            "reduced reset route skipped a target-level purchase: "
-            + str(len(model.unlock_calls))
+            "reduced reset route changed target-level order: "
+            + str(model.unlock_calls)
             + "/"
             + str(expected_steps)
         )
