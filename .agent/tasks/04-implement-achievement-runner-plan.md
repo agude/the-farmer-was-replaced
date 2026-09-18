@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T19:30:33.510612+00:00"
+updated: "2026-09-18T19:35:04.834034+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Task 5 complete: added the isolated two-module achievement_import_cycle_a/b graph and run_achievement_import.py trigger. Helpers perform no game work; static tests verify exact cycle edges, entry-point trigger, and no production imports. Registered the entry point as parse-only. Full just check passed.
+Task 6 complete: added run_achievement_stack_overflow.py with direct unbounded recursion and an explicit intentional-runtime-error comment. Added parse-only static tests, forbade field/inventory actions, and full just check passed; the file is never imported or executed by CPython.
 
 ## Notes
 
@@ -44,3 +44,7 @@ Task 5 complete: added the isolated two-module achievement_import_cycle_a/b grap
 ### 2026-09-18T19:30:33.510598+00:00
 
 Task 6 complete: added run_achievement_stack_overflow.py with direct unbounded recursion and an explicit intentional-runtime-error comment. Added parse-only static tests, forbade field/inventory actions, and full just check passed; the file is never imported or executed by CPython.
+
+### 2026-09-18T19:35:04.834020+00:00
+
+Task 7 complete: added import-safe achievement_cactus.py for explicit 0..size-1 full-field growth, row-sort barrier, column-sort barrier, and exactly one unfertilized chain harvest. The deterministic harness proves soil/maturity preconditions, sorted/reverse/diagonal inputs, ten seeded random 32x32 inputs, and spawn fallback lane coverage. Full just check passed; in-game throughput remains for Tasks 8-9.
