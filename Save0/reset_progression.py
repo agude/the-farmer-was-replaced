@@ -259,6 +259,22 @@ def report_reset_failure(unlock_target, target_level, reason, status, starting_t
     )
 
 
+def report_reset_success(starting_time) -> None:
+    elapsed_time = get_time() - starting_time
+    if elapsed_time < 0:
+        elapsed_time = 0
+
+    quick_print(
+        "Reset complete: status=success unlock="
+        + str(Unlocks.Leaderboard)
+        + " level="
+        + str(num_unlocked(Unlocks.Leaderboard))
+        + " elapsed="
+        + str(elapsed_time)
+        + " seconds"
+    )
+
+
 def unlock_one(unlock_target, prerequisites=None, target_level=1):
     if num_unlocked(unlock_target) >= target_level:
         return make_unlock_result(unlock_target, UNLOCK_ALREADY_COMPLETE)
@@ -319,7 +335,10 @@ def run_reset_progression() -> bool:
         report_reset_failure(unlock_target, target_level, reason, status, starting_time)
         return False
 
-    return num_unlocked(Unlocks.Leaderboard) > 0
+    reset_succeeded = num_unlocked(Unlocks.Leaderboard) > 0
+    if reset_succeeded:
+        report_reset_success(starting_time)
+    return reset_succeeded
 
 
 def is_blank_reset_environment() -> bool:
