@@ -180,6 +180,9 @@ def unlock_one(unlock_target, prerequisites=None):
 
 
 def run_reset_progression() -> bool:
+    if num_unlocked(Unlocks.Leaderboard) > 0:
+        return True
+
     plan = get_unlock_plan()
     if not validate_unlock_plan(plan):
         quick_print("Reset unlock plan contains a dependency cycle")
@@ -195,3 +198,18 @@ def run_reset_progression() -> bool:
         return False
 
     return num_unlocked(Unlocks.Leaderboard) > 0
+
+
+def is_blank_reset_environment() -> bool:
+    return (
+        get_world_size() == 1
+        and num_unlocked(Unlocks.Grass) == 0
+        and num_unlocked(Unlocks.Plant) == 0
+    )
+
+
+if __name__ == "__main__":
+    if is_blank_reset_environment():
+        run_reset_progression()
+    else:
+        quick_print("Reset progression requires a blank simulation")
