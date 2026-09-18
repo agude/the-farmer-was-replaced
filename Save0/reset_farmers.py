@@ -245,6 +245,7 @@ def farm_bones(required_amount: int, input_depth: int) -> bool:
                 return False
 
         before_bones = num_items(Items.Bone)
+        move_to(0, 0)
         if not run_dinosaur_once(world_size):
             return False
         if num_items(Items.Bone) <= before_bones:

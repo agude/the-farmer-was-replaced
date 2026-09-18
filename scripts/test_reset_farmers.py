@@ -287,9 +287,11 @@ def test_bone_producer_uses_reset_sized_dinosaur_batches() -> None:
     install()
     state = {Items.Bone: 0, Items.Cactus: 0}
     run_calls = []
+    moves = []
 
     farmers.num_unlocked = lambda _unlock: 1
     farmers.num_items = lambda item: state.get(item, 0)
+    farmers.move_to = lambda x, y: moves.append((x, y))
     farmers.get_apple_cactus_cost = lambda: 2
     farmers.get_full_run_cactus_cost = lambda _size, apple_cost: apple_cost * 4
 
@@ -309,6 +311,8 @@ def test_bone_producer_uses_reset_sized_dinosaur_batches() -> None:
         raise AssertionError("Bone producer stopped before reaching its target")
     if len(run_calls) != 3:
         raise AssertionError("Bone producer did not repeat reset-sized dinosaur batches")
+    if moves != [(0, 0), (0, 0), (0, 0)]:
+        raise AssertionError("Bone producer did not reset the dinosaur start position")
 
 
 def test_controller_uses_reset_farmer_hook() -> None:
