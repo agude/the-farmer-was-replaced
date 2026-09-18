@@ -255,8 +255,7 @@ def test_initial_power_stockpile_precedes_later_stages() -> None:
 
     if actions[:2] != [Items.Power, Items.Cactus]:
         raise AssertionError(
-            "planner advanced before establishing the initial power stockpile: "
-            + str(actions)
+            "planner advanced before establishing the initial power stockpile: " + str(actions)
         )
 
 
@@ -272,9 +271,7 @@ def test_established_power_between_watermarks_uses_required_resource() -> None:
         raise AssertionError("planner did not select the required resource")
 
     if actions[-1] != Items.Wood:
-        raise AssertionError(
-            "established power between watermarks triggered a sunflower cycle"
-        )
+        raise AssertionError("established power between watermarks triggered a sunflower cycle")
 
 
 def test_power_refill_stays_active_until_high_watermark() -> None:
@@ -327,9 +324,7 @@ def test_fertilizer_wait_does_not_restart_power_refill() -> None:
         raise AssertionError("planner did not resume Gold work after the wait")
 
     if actions[-1] != Items.Gold:
-        raise AssertionError(
-            "fertilizer wait caused a sunflower cycle above the low watermark"
-        )
+        raise AssertionError("fertilizer wait caused a sunflower cycle above the low watermark")
 
 
 def test_live_power_cost_overrides_watermark_policy() -> None:
@@ -1030,7 +1025,7 @@ def test_faulty_producer_cannot_consume_saved_protected_balance() -> None:
         top_hat.run_item_producer(Items.Wood, simulator.top_hat_cost)
     except AssertionError as error:
         if "protected balance was consumed for Power" not in str(error):
-            raise AssertionError("faulty producer reported the wrong protection failure")
+            raise AssertionError("faulty producer reported the wrong protection failure") from error
     else:
         raise AssertionError("faulty producer consumed a protected balance successfully")
 
