@@ -40,10 +40,9 @@ RUNNERS = {
         "run_maze_workers",
     ),
 }
-FINITE_RUNNERS = {
-    "run_achievement_healer.py": "run_healer",
-}
+FINITE_RUNNERS = {}
 IMPORTED_FINITE_RUNNERS = {
+    "run_achievement_healer.py": ("achievement_healer", "run_healer"),
     "run_achievement_dinosaur.py": (
         "achievement_dinosaur",
         "run_achievement_dinosaur_once",
@@ -59,6 +58,7 @@ PARSE_ONLY_RUNNERS = {
 }
 IMPORT_SAFE_IMPLEMENTATIONS = (
     "achievement_config.py",
+    "achievement_healer.py",
     "achievement_metrics.py",
 )
 SIDE_EFFECT_NAMES = {

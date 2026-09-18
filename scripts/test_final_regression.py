@@ -18,6 +18,7 @@ sys.path.insert(0, str(SAVE_DIRECTORY))
 
 IMPLEMENTATION_MODULES = (
     "achievement_config",
+    "achievement_healer",
     "achievement_metrics",
     "achievement_cactus",
     "achievement_pumpkin",
