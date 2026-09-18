@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T22:30:56.087557+00:00"
+updated: "2026-09-18T22:37:38.047344+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Correction: the repository just check command passes when task-local uv and Ruff caches are used. The real-game benchmark and achievement-closure requirements remain unverified because the game runtime is unavailable; the plan result log remains intentionally unfilled.
+Latest verification: commit 0847cea adds stateful recovery tests for Wood, Pumpkin, Weird Substance, Gold, and Bone; commit a59b97f asserts the exact unlock and target-level route sequence. Full repository check passes. Runtime executable and simulator handle remain absent.
 
 ## Notes
 
@@ -168,3 +168,11 @@ Correction: the repository just check command passes when task-local uv and Ruff
 ### 2026-09-18T22:30:56.087533+00:00
 
 Correction: the full repository check passes with task-local uv and Ruff caches. The prior note's missing phrase was a shell-quoting artifact.
+
+### 2026-09-18T22:35:31.864580+00:00
+
+Latest verification: commit 0847cea adds stateful recovery tests for Wood, Pumpkin, Weird Substance, Gold, and Bone; commit a59b97f asserts the exact unlock and target-level route sequence. Full repository check passes. Runtime executable and simulator handle remain absent.
+
+### 2026-09-18T22:37:38.047326+00:00
+
+Updated the local ignored plan.md checkboxes for criteria proven by current tests and static validation across Chunks 1-4, 7-9, and 12-14. Live-game measurements, ten-minute soaks, simulation seeds, leaderboards, and achievement unlocks remain unchecked.
