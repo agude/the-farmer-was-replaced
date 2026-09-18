@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T20:34:21.975431+00:00"
+updated: "2026-09-18T20:35:54.599839+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Task 29 static implementation complete: added reset_farmers.py with bounded single-tile Hay/Wood/Carrot/Pumpkin/Cactus/Power producers, recursive planting-input safeguards, Weird Substance handling, and explicit Gold/Bone maze/dinosaur stages. Wired reset_progression.py to the producer hook and added precondition/dispatch tests; full just check passed. Full blank-reset progression and ten-seed validation remain live/simulation work for Tasks 30-31.
+Task 30 static implementation complete: added the Leaderboard early-success return and blank-world guard to reset_progression.py, plus run_leaderboard_reset.py targeting the guarded reset_progression window. Harness covers immediate Leaderboard termination, no nested leaderboard call, blank-state guard, board selection, window name, and speedup; full just check passed. Ten-seed simulation, real Fastest Reset acceptance, and Full Automation unlock remain live validation.
 
 ## Notes
 
@@ -144,3 +144,7 @@ Task 29 static implementation complete: added reset_farmers.py with bounded sing
 ### 2026-09-18T20:34:21.975417+00:00
 
 Task 30 static implementation complete: added the Leaderboard early-success return and blank-world guard to reset_progression.py, plus run_leaderboard_reset.py targeting the guarded reset_progression window. Harness covers immediate Leaderboard termination, no nested leaderboard call, blank-state guard, board selection, window name, and speedup; full just check passed. Ten-seed simulation, real Fastest Reset acceptance, and Full Automation unlock remain live validation.
+
+### 2026-09-18T20:35:54.599818+00:00
+
+Task 31 static regression complete: added final import-safety checks for all implementation modules, explicit parsing checks for leaderboard/simulation entry points, and runner inventory coverage. Full just check passed. The in-game result log remains unfilled because no game debugger/Stats/leaderboard execution is available in this workspace; live Master rates, leaderboard scores, Fastest Reset acceptance, and Steam achievement closure are not claimed.
