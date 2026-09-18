@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T19:27:35.519709+00:00"
+updated: "2026-09-18T19:29:28.985034+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Task 3 runner infrastructure complete: extended scripts/test_runners.py with an import-side-effect guard for registered implementation modules and preserved the continuous-runner failure-exit checks. Future achievement entry points must be registered as introduced; circular-import and stack-overflow entry points will remain parse-only.
+Task 4 complete: added run_achievement_healer.py with item preflight, isolated empty-cross search, grass planting, fertilizer use, Weird Substance cure, and direct failure diagnostics. Added static Healer acceptance tests, registered it as a finite runner, and full just check passed. In-game unlock still requires game-side validation.
 
 ## Notes
 
@@ -36,3 +36,7 @@ Task 3 runner infrastructure complete: extended scripts/test_runners.py with an 
 ### 2026-09-18T19:27:35.519694+00:00
 
 Task 4 complete: added run_achievement_healer.py with item preflight, isolated empty-cross search, grass planting, fertilizer use, Weird Substance cure, and direct failure diagnostics. Added static Healer acceptance tests, registered it as a finite runner, and full just check passed. In-game unlock still requires game-side validation.
+
+### 2026-09-18T19:29:28.985020+00:00
+
+Task 5 complete: added the isolated two-module achievement_import_cycle_a/b graph and run_achievement_import.py trigger. Helpers perform no game work; static tests verify exact cycle edges, entry-point trigger, and no production imports. Registered the entry point as parse-only. Full just check passed.

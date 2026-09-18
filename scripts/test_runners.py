@@ -23,6 +23,9 @@ RUNNERS = {
 FINITE_RUNNERS = {
     "run_achievement_healer.py": "run_healer",
 }
+PARSE_ONLY_RUNNERS = {
+    "run_achievement_import.py",
+}
 IMPORT_SAFE_IMPLEMENTATIONS = (
     "achievement_config.py",
     "achievement_metrics.py",
@@ -117,6 +120,11 @@ def test_finite_runner_structure() -> None:
         assert_finite_runner_structure(filename, function)
 
 
+def test_parse_only_runner_structure() -> None:
+    for filename in PARSE_ONLY_RUNNERS:
+        ast.parse((SAVE_DIRECTORY / filename).read_text())
+
+
 def test_runner_structure() -> None:
     for filename, (module, function) in RUNNERS.items():
         source = (SAVE_DIRECTORY / filename).read_text()
@@ -152,7 +160,10 @@ def main() -> None:
     test_runner_structure()
     test_import_safe_achievement_modules()
     test_finite_runner_structure()
-    print("Passed runner structure, finite-runner, failure-exit, and import-safety tests")
+    test_parse_only_runner_structure()
+    print(
+        "Passed runner structure, finite-runner, parse-only, failure-exit, and import-safety tests"
+    )
 
 
 if __name__ == "__main__":
