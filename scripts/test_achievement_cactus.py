@@ -75,6 +75,12 @@ class GridSimulator:
         self.phase_events = []
         self.spawn_attempts = []
         self.harvest_calls = 0
+        self.measure_calls = []
+        self.move_actions = 0
+        self.move_to_calls = 0
+        self.lane_return_positions = []
+        self.tick_count = 0
+        self.debug_messages = []
         self.precondition_checked = False
         self.values_at_harvest = None
         self.row_job = BASE_ROW_JOB
@@ -83,8 +89,17 @@ class GridSimulator:
     def install(self) -> None:
         achievement_cactus.get_world_size = self.get_world_size
         achievement_cactus.move_to = self.move_to
+        achievement_cactus.move = self.move
+        achievement_cactus.measure = self.measure
+        achievement_cactus.swap = self.swap
+        achievement_cactus.East = EAST
+        achievement_cactus.North = NORTH
+        achievement_cactus.South = SOUTH
+        achievement_cactus.West = WEST
         achievement_cactus.can_harvest = self.can_harvest
         achievement_cactus.harvest = self.harvest
+        achievement_cactus.get_tick_count = self.get_tick_count
+        achievement_cactus.quick_print = self.quick_print
         achievement_cactus.dispatch_indexed_jobs = parallel_farming.dispatch_indexed_jobs
         achievement_cactus.sort_full_field_row_job = self.record_row_job
         achievement_cactus.sort_full_field_column_job = self.record_column_job
@@ -119,12 +134,34 @@ class GridSimulator:
     def move_to(self, x: int, y: int) -> None:
         self.x = x
         self.y = y
+        self.move_to_calls += 1
+
+    def move(self, direction) -> bool:
+        if direction == EAST:
+            self.x += 1
+        elif direction == WEST:
+            self.x -= 1
+        elif direction == NORTH:
+            self.y += 1
+        elif direction == SOUTH:
+            self.y -= 1
+        else:
+            raise AssertionError(f"Unknown direction: {direction}")
+
+        self.move_actions += 1
+        return True
 
     def get_pos_x(self) -> int:
         return self.x
 
     def get_pos_y(self) -> int:
         return self.y
+
+    def get_tick_count(self) -> int:
+        return self.tick_count
+
+    def quick_print(self, message) -> None:
+        self.debug_messages.append(message)
 
     def current_tile(self):
         return self.y, self.x
@@ -152,6 +189,8 @@ class GridSimulator:
         return self.entities[row][column] == Entities.Cactus and self.mature[row][column]
 
     def measure(self, direction=None) -> int:
+        self.measure_calls.append(direction)
+
         if not self.precondition_checked:
             self.precondition_checked = True
 
@@ -206,11 +245,15 @@ class GridSimulator:
 
     def record_row_job(self, job) -> bool:
         self.phase_events.append("row")
-        return self.row_job(job)
+        result = self.row_job(job)
+        self.lane_return_positions.append(("row", self.x, self.y))
+        return result
 
     def record_column_job(self, job) -> bool:
         self.phase_events.append("column")
-        return self.column_job(job)
+        result = self.column_job(job)
+        self.lane_return_positions.append(("column", self.x, self.y))
+        return result
 
     def spawn_drone(self, _function, job) -> None:
         self.spawn_attempts.append(job)
@@ -266,6 +309,37 @@ def run_case(name: str, values: list[list[int]]) -> None:
         raise AssertionError(f"{name}: column sorting began before row sorting")
     if len(simulator.spawn_attempts) != 3 * (simulator.size - 1):
         raise AssertionError(f"{name}: spawn fallback skipped a phase lane")
+    if simulator.move_actions == 0:
+        raise AssertionError(f"{name}: lane workers did not use direct movement")
+    if len(simulator.lane_return_positions) != 2 * simulator.size:
+        raise AssertionError(f"{name}: a lane worker did not report its return position")
+    for index in range(0, len(simulator.measure_calls), 2):
+        if simulator.measure_calls[index] is not None:
+            raise AssertionError(f"{name}: adjacent comparison reread its current cactus")
+        if simulator.measure_calls[index + 1] not in (EAST, WEST, NORTH, SOUTH):
+            raise AssertionError(f"{name}: adjacent comparison did not read one neighbor")
+
+
+def test_debug_phase_totals() -> None:
+    simulator = GridSimulator(sorted_grid(4))
+    simulator.install()
+    achievement_cactus.DEBUG_OUTPUT = True
+
+    try:
+        if not achievement_cactus.farm_achievement_cactus_cycle():
+            raise AssertionError("debug cactus cycle reported failure")
+    finally:
+        achievement_cactus.DEBUG_OUTPUT = False
+
+    expected_labels = (
+        "Cactus planting",
+        "Cactus row-sort",
+        "Cactus column-sort",
+        "Cactus harvest",
+    )
+    for label in expected_labels:
+        if not any(message.startswith(label + " ticks ") for message in simulator.debug_messages):
+            raise AssertionError(f"debug output omitted {label} ticks")
 
 
 def main() -> None:
@@ -278,7 +352,11 @@ def main() -> None:
     for case_number in range(10):
         run_case(f"random {case_number + 1}", random_grid(size, generator))
 
-    print("Passed 13 full-field cactus grids, phase barriers, soil/maturity, and fallback tests")
+    test_debug_phase_totals()
+    print(
+        "Passed 13 full-field cactus grids, phase barriers, direct movement, "
+        "metrics, soil/maturity, and fallback tests"
+    )
 
 
 if __name__ == "__main__":
