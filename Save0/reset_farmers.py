@@ -12,10 +12,10 @@ MAX_INPUT_DEPTH = 4
 
 def get_crop_spec(item):
     if item == Items.Hay:
-        return Entities.Grass, Unlocks.Grass
+        return Entities.Grass, None
 
     if item == Items.Wood:
-        return Entities.Bush, Unlocks.Trees
+        return Entities.Bush, Unlocks.Plant
 
     if item == Items.Carrot:
         return Entities.Carrot, Unlocks.Carrots
@@ -82,7 +82,9 @@ def prepare_crop(entity, input_depth: int) -> bool:
 
 
 def farm_crop(item, entity, unlock_target, required_amount: int, input_depth: int) -> bool:
-    if num_unlocked(Unlocks.Plant) == 0 or num_unlocked(unlock_target) == 0:
+    if entity != Entities.Grass and num_unlocked(Unlocks.Plant) == 0:
+        return False
+    if unlock_target != None and num_unlocked(unlock_target) == 0:
         return False
     if get_world_size() < 1 or required_amount <= 0:
         return False

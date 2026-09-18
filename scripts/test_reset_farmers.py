@@ -87,11 +87,16 @@ def test_crop_mapping_covers_reset_outputs() -> None:
         if farmers.get_crop_spec(item) is None:
             raise AssertionError(f"reset producer lost crop mapping for {item}")
 
+    if farmers.get_crop_spec(Items.Hay)[1] is not None:
+        raise AssertionError("natural Grass incorrectly requires a Grass unlock")
+    if farmers.get_crop_spec(Items.Wood)[1] != Unlocks.Plant:
+        raise AssertionError("early Bush production incorrectly requires Trees")
+
 
 def test_locked_crop_and_unsupported_input_fail_before_actions() -> None:
     install()
     farmers.num_unlocked = lambda unlock: 0 if unlock == Unlocks.Plant else 1
-    if farmers.produce_item(Items.Hay, 1):
+    if farmers.produce_item(Items.Wood, 1):
         raise AssertionError("locked crop producer reported success")
     if farmers.produce_item(Items.Water, 1):
         raise AssertionError("unsupported reset input reported success")
