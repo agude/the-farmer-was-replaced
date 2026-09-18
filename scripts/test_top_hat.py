@@ -695,6 +695,31 @@ def test_blocked_dependency_allows_unrelated_resource_work() -> None:
         raise AssertionError("planner did not fall back from the blocked dependency")
 
 
+def test_planner_simulation_matches_live_top_hat_cost_shape() -> None:
+    simulator = PlannerSimulation()
+    required_items = (
+        Items.Hay,
+        Items.Wood,
+        Items.Carrot,
+        Items.Cactus,
+        Items.Gold,
+    )
+    excluded_items = (
+        Items.Power,
+        Items.Weird_Substance,
+        Items.Pumpkin,
+        Items.Fertilizer,
+    )
+
+    for item in required_items:
+        if item not in simulator.top_hat_cost:
+            raise AssertionError("simulation omitted live Top Hat cost item " + str(item))
+
+    for item in excluded_items:
+        if item in simulator.top_hat_cost:
+            raise AssertionError("simulation added non-cost item " + str(item))
+
+
 class PlannerSimulation:
     def __init__(self) -> None:
         self.inventory = {
@@ -889,7 +914,7 @@ class PlannerSimulation:
         self.record_action("wood")
         self.inventory[Items.Hay] -= 4
         if self.consume_protected_balance:
-            self.inventory[Items.Power] -= 1
+            self.inventory[Items.Power] = protected[Items.Power] - 1
         self.inventory[Items.Wood] += 4
         self.check_protected(protected)
         self.finish_action()
@@ -930,6 +955,31 @@ def test_realistic_planner_simulation() -> None:
     if simulator.unlock_calls != 1 or simulator.actions[-1] != "unlock":
         raise AssertionError("simulation unlocked with an invalid action sequence")
 
+    power_levels = []
+    for action, power_amount in simulator.power_after_actions:
+        if action == "power":
+            power_levels.append(power_amount)
+
+    if not power_levels or power_levels[0] < top_hat.POWER_HIGH_WATERMARK:
+        raise AssertionError("initial Power action did not reach the high watermark")
+
+    saw_between_watermarks = False
+    for index, (action, power_amount) in enumerate(simulator.power_after_actions):
+        if action != "wait":
+            continue
+        if not top_hat.POWER_LOW_WATERMARK < power_amount < top_hat.POWER_HIGH_WATERMARK:
+            continue
+
+        saw_between_watermarks = True
+        if (
+            index + 1 < len(simulator.power_after_actions)
+            and simulator.power_after_actions[index + 1][0] == "power"
+        ):
+            raise AssertionError("between-watermark wait caused immediate Power work")
+
+    if not saw_between_watermarks:
+        raise AssertionError("simulation did not exercise between-watermark consumption")
+
     for required_action in (
         "power",
         "cactus",
@@ -948,6 +998,44 @@ def test_realistic_planner_simulation() -> None:
 
     if simulator.protection_checks == 0:
         raise AssertionError("simulation did not evaluate protected balances")
+
+    simulator.inventory[Items.Power] = 9
+    crossing_actions = []
+
+    def record_crossing(item, policy) -> bool:
+        crossing_actions.append(item)
+        return True
+
+    top_hat.run_item_producer = record_crossing
+    top_hat.perform_next_action = REAL_PERFORM_NEXT_ACTION
+    if not top_hat.perform_next_action({Items.Wood: 1}):
+        raise AssertionError("low Power crossing did not select a refill action")
+    if crossing_actions[-1] != Items.Power:
+        raise AssertionError("crossing the low watermark did not start Power work")
+
+
+def test_faulty_producer_cannot_consume_saved_protected_balance() -> None:
+    simulator = PlannerSimulation()
+    simulator.install()
+    simulator.inventory[Items.Power] = 20
+    simulator.inventory[Items.Hay] = 4
+    simulator.inventory[Items.Cactus] = 2
+    simulator.inventory[Items.Gold] = 8
+    simulator.inventory[Items.Carrot] = 3
+    simulator.consume_protected_balance = True
+    top_hat.POWER_STOCKPILE_ESTABLISHED = True
+    top_hat.POWER_REFILL_ACTIVE = False
+
+    try:
+        top_hat.run_item_producer(Items.Wood, simulator.top_hat_cost)
+    except AssertionError as error:
+        if "protected balance was consumed for Power" not in str(error):
+            raise AssertionError("faulty producer reported the wrong protection failure")
+    else:
+        raise AssertionError("faulty producer consumed a protected balance successfully")
+
+    if simulator.actions != ["wood"]:
+        raise AssertionError("protected-balance failure was not detected at the faulty action")
 
 
 def test_missing_producer_stops_within_action_limit() -> None:
@@ -996,7 +1084,9 @@ def main() -> None:
     test_direct_dependency_cycle_stops_cleanly()
     test_multi_item_dependency_cycle_stops_cleanly()
     test_blocked_dependency_allows_unrelated_resource_work()
+    test_planner_simulation_matches_live_top_hat_cost_shape()
     test_realistic_planner_simulation()
+    test_faulty_producer_cannot_consume_saved_protected_balance()
     test_missing_producer_stops_within_action_limit()
     print("Passed Top Hat planner policy, live-cost, safeguard, and routing tests")
 
