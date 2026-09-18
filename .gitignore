@@ -7,3 +7,7 @@ __pycache__/
 
 # Temporary research and agent notes
 tmp/
+/parallel_plan.md
+/plan.md
+/fixes.md
+/fix.md
