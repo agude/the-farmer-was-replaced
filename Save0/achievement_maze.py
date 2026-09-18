@@ -19,27 +19,50 @@ MAZE_WORKER_BLOCKED = "blocked"
 MAZE_WORKER_TREASURE_MISSING = "treasure_missing"
 
 
-def is_valid_maze_index(maze_index: int) -> bool:
-    return maze_index >= 0 and maze_index < MAZE_REGION_COUNT
+def get_maze_layout_dimensions(world_size=None, maze_size=None):
+    if world_size == None and maze_size == None:
+        return MAZE_REGION_COLUMNS, MAZE_REGION_ROWS, MAZE_REGION_COUNT
+
+    if world_size == None:
+        world_size = MAZE_WORLD_WIDTH
+    if maze_size == None:
+        maze_size = MAZE_REGION_SIZE
+    if world_size <= 0 or maze_size <= 0:
+        return 0, 0, 0
+
+    columns = world_size // maze_size
+    rows = world_size // maze_size
+    return columns, rows, columns * rows
 
 
-def get_maze_anchor(maze_index: int):
-    if not is_valid_maze_index(maze_index):
+def is_valid_maze_index(maze_index: int, world_size=None, maze_size=None) -> bool:
+    _columns, _rows, maze_count = get_maze_layout_dimensions(world_size, maze_size)
+    return maze_index >= 0 and maze_index < maze_count
+
+
+def get_maze_anchor(maze_index: int, world_size=None, maze_size=None):
+    if not is_valid_maze_index(maze_index, world_size, maze_size):
         return None
 
-    column = maze_index % MAZE_REGION_COLUMNS
-    row = maze_index // MAZE_REGION_COLUMNS
-    return column * MAZE_REGION_SIZE, row * MAZE_REGION_SIZE
+    columns, _rows, _maze_count = get_maze_layout_dimensions(world_size, maze_size)
+    if maze_size == None:
+        maze_size = MAZE_REGION_SIZE
+
+    column = maze_index % columns
+    row = maze_index // columns
+    return column * maze_size, row * maze_size
 
 
-def get_maze_bounds(maze_index: int):
-    anchor = get_maze_anchor(maze_index)
+def get_maze_bounds(maze_index: int, world_size=None, maze_size=None):
+    anchor = get_maze_anchor(maze_index, world_size, maze_size)
     if anchor == None:
         return None
 
+    if maze_size == None:
+        maze_size = MAZE_REGION_SIZE
     anchor_x, anchor_y = anchor
-    last_x = anchor_x + MAZE_REGION_SIZE - 1
-    last_y = anchor_y + MAZE_REGION_SIZE - 1
+    last_x = anchor_x + maze_size - 1
+    last_y = anchor_y + maze_size - 1
     return anchor_x, anchor_y, last_x, last_y
 
 
@@ -91,47 +114,57 @@ def get_safe_maze_creation_coordinate(
     return lower_x + maze_size // 2, lower_y + maze_size // 2
 
 
-def get_maze_start_position(maze_index: int):
-    bounds = get_maze_bounds(maze_index)
+def get_maze_start_position(maze_index: int, world_size=None, maze_size=None):
+    bounds = get_maze_bounds(maze_index, world_size, maze_size)
     if bounds == None:
         return None
 
+    if world_size == None:
+        world_size = MAZE_WORLD_WIDTH
+    if maze_size == None:
+        maze_size = MAZE_REGION_SIZE
     return get_safe_maze_creation_coordinate(
         bounds[0],
         bounds[1],
-        MAZE_REGION_SIZE,
-        MAZE_WORLD_WIDTH,
+        maze_size,
+        world_size,
     )
 
 
-def get_maze_index(x: int, y: int):
-    if x < 0 or y < 0 or x >= MAZE_WORLD_WIDTH or y >= MAZE_WORLD_HEIGHT:
+def get_maze_index(x: int, y: int, world_size=None, maze_size=None):
+    columns, rows, _maze_count = get_maze_layout_dimensions(world_size, maze_size)
+    if maze_size == None:
+        maze_size = MAZE_REGION_SIZE
+    layout_width = columns * maze_size
+    layout_height = rows * maze_size
+    if x < 0 or y < 0 or x >= layout_width or y >= layout_height:
         return None
 
-    column = x // MAZE_REGION_SIZE
-    row = y // MAZE_REGION_SIZE
-    maze_index = row * MAZE_REGION_COLUMNS + column
+    column = x // maze_size
+    row = y // maze_size
+    maze_index = row * columns + column
 
-    if not is_valid_maze_index(maze_index):
+    if not is_valid_maze_index(maze_index, world_size, maze_size):
         return None
 
     return maze_index
 
 
-def is_maze_coordinate(x: int, y: int, maze_index: int) -> bool:
-    return get_maze_index(x, y) == maze_index
+def is_maze_coordinate(x: int, y: int, maze_index: int, world_size=None, maze_size=None) -> bool:
+    return get_maze_index(x, y, world_size, maze_size) == maze_index
 
 
-def get_maze_worker_jobs(worker_count: int):
+def get_maze_worker_jobs(worker_count: int, world_size=None, maze_size=None):
     if worker_count <= 0:
         return []
 
-    if worker_count > MAZE_REGION_COUNT:
-        worker_count = MAZE_REGION_COUNT
+    _columns, _rows, maze_count = get_maze_layout_dimensions(world_size, maze_size)
+    if worker_count > maze_count:
+        worker_count = maze_count
 
     jobs = []
     for maze_index in range(worker_count):
-        start_x, start_y = get_maze_start_position(maze_index)
+        start_x, start_y = get_maze_start_position(maze_index, world_size, maze_size)
         jobs.append((maze_index, start_x, start_y))
 
     return jobs
@@ -209,12 +242,12 @@ def record_maze_edge(maze_map, x: int, y: int, direction, neighbor_x: int, neigh
     maze_map["edges"][neighbor][opposite] = position
 
 
-def map_maze(maze_index: int, start_x: int, start_y: int):
-    bounds = get_maze_bounds(maze_index)
+def map_maze(maze_index: int, start_x: int, start_y: int, world_size=None, maze_size=None):
+    bounds = get_maze_bounds(maze_index, world_size, maze_size)
     if bounds == None:
         return None
 
-    if not is_maze_coordinate(start_x, start_y, maze_index):
+    if not is_maze_coordinate(start_x, start_y, maze_index, world_size, maze_size):
         return None
 
     maze_map = {"tiles": [], "edges": {}}
@@ -240,7 +273,13 @@ def map_maze(maze_index: int, start_x: int, start_y: int):
         )
         neighbor_x, neighbor_y = get_neighbor_position(current_x, current_y, direction)
 
-        if not is_maze_coordinate(neighbor_x, neighbor_y, maze_index):
+        if not is_maze_coordinate(
+            neighbor_x,
+            neighbor_y,
+            maze_index,
+            world_size,
+            maze_size,
+        ):
             continue
 
         if not move(direction):
@@ -455,8 +494,13 @@ def can_fund_reusable_maze(relocation_limit: int) -> bool:
     return num_items(Items.Weird_Substance) >= budget
 
 
-def create_reusable_maze(maze_index: int, substance_cost: int) -> bool:
-    start = get_maze_start_position(maze_index)
+def create_reusable_maze(
+    maze_index: int,
+    substance_cost: int,
+    world_size=None,
+    maze_size=None,
+) -> bool:
+    start = get_maze_start_position(maze_index, world_size, maze_size)
     if start == None:
         return False
 
@@ -482,19 +526,20 @@ def make_maze_worker_result(completed_relocations: int, reason):
 
 
 def run_reusable_maze_worker(maze_index: int, relocation_limit=MAZE_REUSE_LIMIT):
-    if not is_valid_maze_index(maze_index):
-        return make_maze_worker_result(0, MAZE_WORKER_BLOCKED)
-
     budget = get_reusable_maze_substance_budget(relocation_limit)
     if budget == None or num_items(Items.Weird_Substance) < budget:
         return make_maze_worker_result(0, MAZE_WORKER_RESOURCE_EXHAUSTED)
 
     substance_cost = get_reusable_maze_substance_cost()
-    if not create_reusable_maze(maze_index, substance_cost):
+    world_size = get_world_size()
+    if not is_valid_maze_index(maze_index, world_size, substance_cost):
+        return make_maze_worker_result(0, MAZE_WORKER_BLOCKED)
+
+    if not create_reusable_maze(maze_index, substance_cost, world_size, substance_cost):
         return make_maze_worker_result(0, MAZE_WORKER_RESOURCE_EXHAUSTED)
 
-    start_x, start_y = get_maze_start_position(maze_index)
-    maze_map = map_maze(maze_index, start_x, start_y)
+    start_x, start_y = get_maze_start_position(maze_index, world_size, substance_cost)
+    maze_map = map_maze(maze_index, start_x, start_y, world_size, substance_cost)
     if maze_map == None:
         return make_maze_worker_result(0, MAZE_WORKER_BLOCKED)
 
@@ -511,7 +556,13 @@ def run_reusable_maze_worker(maze_index: int, relocation_limit=MAZE_REUSE_LIMIT)
 
             current_x = get_pos_x()
             current_y = get_pos_y()
-            maze_map = map_maze(maze_index, current_x, current_y)
+            maze_map = map_maze(
+                maze_index,
+                current_x,
+                current_y,
+                world_size,
+                substance_cost,
+            )
             if maze_map == None:
                 break
 
@@ -599,7 +650,9 @@ def run_maze_parent_jobs(parent_jobs):
 
 
 def run_maze_workers() -> bool:
-    jobs = get_maze_worker_jobs(max_drones())
+    world_size = get_world_size()
+    maze_size = get_reusable_maze_substance_cost()
+    jobs = get_maze_worker_jobs(max_drones(), world_size, maze_size)
     if len(jobs) == 0:
         return False
 

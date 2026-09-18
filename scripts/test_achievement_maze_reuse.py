@@ -57,6 +57,7 @@ class ReuseSimulator:
         reusable.Unlocks = Unlocks
         reusable.num_unlocked = lambda _unlock: 2
         reusable.num_items = lambda _item: self.inventory
+        reusable.get_world_size = lambda: 32
         reusable.get_ground_type = lambda: Grounds.Grassland
         reusable.till = lambda: self.events.append("till")
         reusable.plant = self.plant
@@ -93,7 +94,14 @@ class ReuseSimulator:
         self.inventory -= amount
         return True
 
-    def map_maze(self, _maze_index, _start_x, _start_y):
+    def map_maze(
+        self,
+        _maze_index,
+        _start_x,
+        _start_y,
+        _world_size,
+        _maze_size,
+    ):
         self.map_calls += 1
         self.treasure_present = True
         return {"edges": {}, "tiles": []}

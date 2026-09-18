@@ -195,6 +195,44 @@ def test_invalid_and_outside_coordinates() -> None:
         raise AssertionError("worker jobs exceeded the available maze regions")
 
 
+def test_world_size_and_maze_level_define_owned_regions() -> None:
+    columns, rows, count = layout.get_maze_layout_dimensions(32, 8)
+    if (columns, rows, count) != (4, 4, 16):
+        raise AssertionError(
+            f"maze layout ignored world size or maze level: {(columns, rows, count)}"
+        )
+
+    jobs = layout.get_maze_worker_jobs(32, 32, 8)
+    if len(jobs) != count:
+        raise AssertionError("dynamic worker jobs exceeded the available maze regions")
+
+    owned_coordinates = set()
+    for maze_index, start_x, start_y in jobs:
+        bounds = layout.get_maze_bounds(maze_index, 32, 8)
+        expected_start = layout.get_safe_maze_creation_coordinate(
+            bounds[0],
+            bounds[1],
+            8,
+            32,
+        )
+        if (start_x, start_y) != expected_start:
+            raise AssertionError(f"dynamic worker start changed for maze {maze_index}")
+
+        for x in range(bounds[0], bounds[2] + 1):
+            for y in range(bounds[1], bounds[3] + 1):
+                coordinate = (x, y)
+                if coordinate in owned_coordinates:
+                    raise AssertionError(f"dynamic maze regions overlap at {coordinate}")
+                owned_coordinates.add(coordinate)
+
+    if len(owned_coordinates) != count * 8**2:
+        raise AssertionError("dynamic maze layout did not cover each owned region once")
+    if layout.get_maze_index(31, 31, 32, 8) != count - 1:
+        raise AssertionError("dynamic maze index did not cover the final world region")
+    if layout.get_maze_index(0, 32, 32, 8) is not None:
+        raise AssertionError("dynamic maze index claimed a row outside the world")
+
+
 def main() -> None:
     test_anchors_and_bounds()
     test_centered_bounds_cover_edges_and_corners()
@@ -204,7 +242,8 @@ def main() -> None:
     test_probe_maps_centered_and_edge_adjusted_bounds()
     test_worker_prefixes_are_disjoint()
     test_invalid_and_outside_coordinates()
-    print("Passed disjoint 4x4 maze anchors, bounds, coverage, and worker-prefix tests")
+    test_world_size_and_maze_level_define_owned_regions()
+    print("Passed disjoint maze anchors, dynamic bounds, coverage, and worker-prefix tests")
 
 
 if __name__ == "__main__":
