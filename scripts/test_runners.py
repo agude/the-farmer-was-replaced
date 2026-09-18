@@ -31,6 +31,12 @@ RUNNERS = {
 FINITE_RUNNERS = {
     "run_achievement_healer.py": "run_healer",
 }
+IMPORTED_FINITE_RUNNERS = {
+    "run_achievement_dinosaur.py": (
+        "achievement_dinosaur",
+        "run_achievement_dinosaur_once",
+    ),
+}
 PARSE_ONLY_RUNNERS = {
     "run_achievement_import.py",
     "run_achievement_stack_overflow.py",
@@ -129,6 +135,29 @@ def test_finite_runner_structure() -> None:
         assert_finite_runner_structure(filename, function)
 
 
+def test_imported_finite_runner_structure() -> None:
+    for filename, (module, function) in IMPORTED_FINITE_RUNNERS.items():
+        source = (SAVE_DIRECTORY / filename).read_text()
+        tree = ast.parse(source)
+        imports = [
+            (node.module, [alias.name for alias in node.names])
+            for node in tree.body
+            if isinstance(node, ast.ImportFrom)
+        ]
+
+        if imports != [(module, [function])]:
+            raise AssertionError(f"{filename} imports the wrong finite operation: {imports}")
+        if any(isinstance(node, ast.While) for node in ast.walk(tree)):
+            raise AssertionError(f"{filename} contains an unbounded loop")
+        if not any(
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == function
+            for node in ast.walk(tree)
+        ):
+            raise AssertionError(f"{filename} never invokes its finite operation")
+
+
 def test_parse_only_runner_structure() -> None:
     for filename in PARSE_ONLY_RUNNERS:
         ast.parse((SAVE_DIRECTORY / filename).read_text())
@@ -169,6 +198,7 @@ def main() -> None:
     test_runner_structure()
     test_import_safe_achievement_modules()
     test_finite_runner_structure()
+    test_imported_finite_runner_structure()
     test_parse_only_runner_structure()
     print(
         "Passed runner structure, finite-runner, parse-only, failure-exit, and import-safety tests"

@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T19:46:14.842794+00:00"
+updated: "2026-09-18T19:49:00.456194+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Task 10 complete: added import-safe achievement_pumpkin.py with one row job per world row, unresolved-position retention, direct empty/dead Pumpkin replacement, one post-plant water action when available, explicit worker failure propagation, row barrier, and one unfertilized bulk harvest. Focused harness covers reduced drone capacity, dead repair, watering, and failed-row harvest blocking. Full just check passed; Task 11 still requires consecutive in-game throughput validation.
+Task 12 deferred by its explicit condition: no in-game Pumpkin Master result is available yet, so the full-field design has not been shown to miss and no 6x6 fallback was added. Revisit only after live Stats/rate validation.
 
 ## Notes
 
@@ -64,3 +64,11 @@ Task 10 complete: added import-safe achievement_pumpkin.py with one row job per 
 ### 2026-09-18T19:46:14.842780+00:00
 
 Task 11 static implementation complete: added run_achievement_pumpkin.py with its own Pumpkin baseline and failure delta, registered it as a continuous runner, and added debug timing labels separating planting/repair from final harvest. The harness proves two consecutive cycles without clear() and validates the runner boundary; full just check passed. Pumpkin Master rate and Big Pumpkin Farmer closure still require in-game validation.
+
+### 2026-09-18T19:46:37.243455+00:00
+
+Task 12 deferred by its explicit condition: no in-game Pumpkin Master result is available yet, so the full-field design has not been shown to miss and no 6x6 fallback was added. Revisit only after live Stats/rate validation.
+
+### 2026-09-18T19:49:00.456180+00:00
+
+Task 13 complete: added achievement_dinosaur.py and finite run_achievement_dinosaur.py. Preflight checks even world size, Dinosaur unlock, live Apple cactus cost, and full-run cactus inventory before clear(); the existing Hamiltonian cycle fills the tail until its expected blocking move, then one Straw Hat change credits and verifies the bone delta. Harness covers preflight isolation, missing Apple hat restoration, exact success sequence, and finite runner boundary. Full just check passed; live one-million-bone result remains in-game validation.
