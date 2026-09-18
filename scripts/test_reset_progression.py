@@ -67,6 +67,8 @@ class ResetSimulator:
         self.cost_reads = []
         self.produce_result = True
         self.produce_amount = 0
+        self.time = 0
+        self.messages = []
 
     def install(self) -> None:
         reset.Unlocks = Unlocks
@@ -76,6 +78,8 @@ class ResetSimulator:
         reset.get_cost = self.get_cost
         reset.unlock = self.unlock
         reset.produce_item = self.produce_item
+        reset.get_time = lambda: self.time
+        reset.quick_print = lambda message: self.messages.append(message)
 
     def get_cost(self, unlock):
         cost = self.costs.get(unlock)
@@ -225,6 +229,29 @@ def test_nonzero_level_does_not_satisfy_higher_target() -> None:
         raise AssertionError("already-owned level was purchased again")
 
 
+def test_failure_report_identifies_target_missing_item_and_elapsed_time() -> None:
+    simulator = ResetSimulator()
+    simulator.install()
+    simulator.time = 17
+    simulator.costs[Unlocks.Target] = {Items.Wood: 4}
+
+    reset.report_reset_failure(Unlocks.Target, 2, "Target stage", "no_progress", 5)
+    if len(simulator.messages) != 1:
+        raise AssertionError("reset failure did not emit one diagnostic")
+    message = simulator.messages[0]
+    for expected in (
+        "Target stage",
+        "no_progress",
+        "Target",
+        "0/2",
+        "Wood",
+        "12",
+        "seconds",
+    ):
+        if expected not in message:
+            raise AssertionError(f"reset diagnostic omitted {expected}: {message}")
+
+
 def test_failed_purchase_is_visible() -> None:
     simulator = ResetSimulator()
     simulator.install()
@@ -271,6 +298,7 @@ def main() -> None:
     test_changing_cost_and_overshooting_producer()
     test_target_level_buys_each_level_with_refreshed_costs()
     test_nonzero_level_does_not_satisfy_higher_target()
+    test_failure_report_identifies_target_missing_item_and_elapsed_time()
     test_failed_purchase_is_visible()
     test_no_progress_guard_prevents_spin()
     test_missing_prerequisite_is_visible()

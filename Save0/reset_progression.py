@@ -250,6 +250,33 @@ def prerequisites_are_ready(prerequisites) -> bool:
     return True
 
 
+def report_reset_failure(unlock_target, target_level, reason, status, starting_time) -> None:
+    cost = get_live_unlock_cost(unlock_target)
+    missing_item = None
+    if cost != None:
+        missing_item = get_missing_cost_item(cost)
+    elapsed_time = get_time() - starting_time
+    if elapsed_time < 0:
+        elapsed_time = 0
+
+    quick_print(
+        reason
+        + ": "
+        + status
+        + " unlock="
+        + str(unlock_target)
+        + " level="
+        + str(num_unlocked(unlock_target))
+        + "/"
+        + str(target_level)
+        + " missing="
+        + str(missing_item)
+        + " elapsed="
+        + str(elapsed_time)
+        + " seconds"
+    )
+
+
 def unlock_one(unlock_target, prerequisites=None, target_level=1):
     if num_unlocked(unlock_target) >= target_level:
         return make_unlock_result(unlock_target, UNLOCK_ALREADY_COMPLETE)
@@ -294,6 +321,7 @@ def run_reset_progression() -> bool:
     if num_unlocked(Unlocks.Leaderboard) > 0:
         return True
 
+    starting_time = get_time()
     plan = get_unlock_plan()
     if not validate_unlock_plan(plan):
         quick_print("Reset unlock plan contains a dependency cycle")
@@ -306,7 +334,7 @@ def run_reset_progression() -> bool:
         if status == UNLOCK_SUCCESS or status == UNLOCK_ALREADY_COMPLETE:
             continue
 
-        quick_print(reason + ": " + status)
+        report_reset_failure(unlock_target, target_level, reason, status, starting_time)
         return False
 
     return num_unlocked(Unlocks.Leaderboard) > 0
