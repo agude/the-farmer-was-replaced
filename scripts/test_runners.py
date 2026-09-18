@@ -31,6 +31,10 @@ RUNNERS = {
         "achievement_polyculture",
         "run_polculture_workers",
     ),
+    "run_achievement_carrots.py": (
+        "achievement_polyculture",
+        "run_polculture_workers",
+    ),
 }
 FINITE_RUNNERS = {
     "run_achievement_healer.py": "run_healer",

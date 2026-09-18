@@ -245,6 +245,54 @@ def get_polculture_worker_jobs(world_size: int, mode):
     return jobs
 
 
+def get_carrot_startup_requirements(world_size: int):
+    jobs = get_polculture_worker_jobs(world_size, CARROT_MODE)
+    if len(jobs) == 0:
+        return None
+
+    primary_cost = get_cost(Entities.Carrot)
+    companion_costs = [
+        get_cost(Entities.Grass),
+        get_cost(Entities.Bush),
+        get_cost(Entities.Tree),
+        get_cost(Entities.Carrot),
+    ]
+    if primary_cost == None:
+        return None
+
+    for companion_cost in companion_costs:
+        if companion_cost == None:
+            return None
+
+    worker_count = len(jobs)
+    required = {}
+    for item in (Items.Hay, Items.Wood):
+        primary_amount = 0
+        if item in primary_cost:
+            primary_amount = primary_cost[item]
+
+        companion_amount = 0
+        for companion_cost in companion_costs:
+            if item in companion_cost and companion_cost[item] > companion_amount:
+                companion_amount = companion_cost[item]
+
+        required[item] = (primary_amount + companion_amount) * worker_count
+
+    return required
+
+
+def can_fund_carrot_startup(world_size: int) -> bool:
+    required = get_carrot_startup_requirements(world_size)
+    if required == None:
+        return False
+
+    for item in required:
+        if num_items(item) < required[item]:
+            return False
+
+    return True
+
+
 def run_polculture_worker_for_cycles(job, cycle_count: int) -> bool:
     primary_x, primary_y, mode = job
 

@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T20:03:00.394071+00:00"
+updated: "2026-09-18T20:05:52.712520+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Follow-up correction: centered each 8x8 primary at its region's (3,3) offset, classified the complete 24-tile Manhattan-radius-three companion set, and fixed companion enumeration to use region anchors. Updated layout and transaction harnesses; full just check passed.
+Task 17 static implementation complete: added run_achievement_hay.py with Hay baseline/delta reporting over persistent polyculture workers, registered the runner, and added hot-loop/ mode/failure boundary coverage. Full just check passed. Candidate-template/worker benchmark and Hay Master throughput still require identical-seed simulation and live in-game Stats validation.
 
 ## Notes
 
@@ -92,3 +92,7 @@ Follow-up correction: centered each 8x8 primary at its region's (3,3) offset, cl
 ### 2026-09-18T20:03:00.394057+00:00
 
 Task 17 static implementation complete: added run_achievement_hay.py with Hay baseline/delta reporting over persistent polyculture workers, registered the runner, and added hot-loop/ mode/failure boundary coverage. Full just check passed. Candidate-template/worker benchmark and Hay Master throughput still require identical-seed simulation and live in-game Stats validation.
+
+### 2026-09-18T20:05:52.712505+00:00
+
+Task 18 static implementation complete: added live worst-case Hay/Wood startup budgeting for the Carrot polyculture workers, a preflight-gated run_achievement_carrots.py entry point with Carrot delta diagnostics, runner registration, and exact/underfunded budget tests. Full just check passed. Five-seed template/worker benchmarking and Carrot Master throughput/Big Carrot Farmer closure remain live validation.
