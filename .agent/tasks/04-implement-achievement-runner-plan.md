@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T22:44:55.651844+00:00"
+updated: "2026-09-18T22:48:36.961511+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Updated the local ignored plan.md checkboxes for criteria proven by current tests and static validation across Chunks 1-4, 7-9, and 12-14. Live-game measurements, ten-minute soaks, simulation seeds, leaderboards, and achievement unlocks remain unchecked.
+Route correction: commit cacd3d5 replaces the dependency-oriented reset plan with the measured farm-only Fastest Reset milestone order, removes language and hat purchases, allows Plant from natural grass, and expands milestone targets into intermediate purchases in the end-to-end model. Full just check passes. Runtime simulation, ten seeds, leaderboard submission, and achievement closure remain unavailable.
 
 ## Notes
 
@@ -180,3 +180,7 @@ Updated the local ignored plan.md checkboxes for criteria proven by current test
 ### 2026-09-18T22:44:55.651830+00:00
 
 Route correction: commit cacd3d5 replaces the dependency-oriented reset plan with the measured farm-only Fastest Reset milestone order, removes language and hat purchases, allows Plant from natural grass, and expands milestone targets into intermediate purchases in the end-to-end model. Full just check passes. Runtime simulation, ten seeds, leaderboard submission, and achievement closure remain unavailable.
+
+### 2026-09-18T22:48:36.961495+00:00
+
+Reset execution support: commit 8bff2c1 adds Save0/run_simulation_reset.py, a bounded seeds-1-through-10 simulation launcher with the empty reset state, speedup 256, and one printed result per seed. Static simulation and final-regression tests plus full just check pass; actual seed completion still requires the game runtime.
