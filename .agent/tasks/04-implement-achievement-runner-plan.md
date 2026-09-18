@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T22:37:38.047344+00:00"
+updated: "2026-09-18T22:44:55.651844+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Latest verification: commit 0847cea adds stateful recovery tests for Wood, Pumpkin, Weird Substance, Gold, and Bone; commit a59b97f asserts the exact unlock and target-level route sequence. Full repository check passes. Runtime executable and simulator handle remain absent.
+Updated the local ignored plan.md checkboxes for criteria proven by current tests and static validation across Chunks 1-4, 7-9, and 12-14. Live-game measurements, ten-minute soaks, simulation seeds, leaderboards, and achievement unlocks remain unchecked.
 
 ## Notes
 
@@ -176,3 +176,7 @@ Latest verification: commit 0847cea adds stateful recovery tests for Wood, Pumpk
 ### 2026-09-18T22:37:38.047326+00:00
 
 Updated the local ignored plan.md checkboxes for criteria proven by current tests and static validation across Chunks 1-4, 7-9, and 12-14. Live-game measurements, ten-minute soaks, simulation seeds, leaderboards, and achievement unlocks remain unchecked.
+
+### 2026-09-18T22:44:55.651830+00:00
+
+Route correction: commit cacd3d5 replaces the dependency-oriented reset plan with the measured farm-only Fastest Reset milestone order, removes language and hat purchases, allows Plant from natural grass, and expands milestone targets into intermediate purchases in the end-to-end model. Full just check passes. Runtime simulation, ten seeds, leaderboard submission, and achievement closure remain unavailable.
