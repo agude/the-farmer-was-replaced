@@ -25,6 +25,7 @@ FINITE_RUNNERS = {
 }
 PARSE_ONLY_RUNNERS = {
     "run_achievement_import.py",
+    "run_achievement_stack_overflow.py",
 }
 IMPORT_SAFE_IMPLEMENTATIONS = (
     "achievement_config.py",

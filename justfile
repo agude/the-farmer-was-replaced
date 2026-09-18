@@ -117,11 +117,15 @@ achievement-healer-test:
 achievement-import-test:
     uv run scripts/test_achievement_import.py
 
+# Run the static Stack Overflow entry-point harness.
+achievement-stack-overflow-test:
+    uv run scripts/test_achievement_stack_overflow.py
+
 # Run the AST harness for continuous standalone runners.
 runner-test:
     uv run scripts/test_runners.py
 
-check: lint cactus-test farm-layout-test sunflower-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test hay-test carrot-test tree-test pumpkin-test cactus-cycle-test sunflower-cycle-test resource-cost-test top-hat-test top-hat-entry-test achievement-config-test achievement-metrics-test achievement-healer-test achievement-import-test runner-test
+check: lint cactus-test farm-layout-test sunflower-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test hay-test carrot-test tree-test pumpkin-test cactus-cycle-test sunflower-cycle-test resource-cost-test top-hat-test top-hat-entry-test achievement-config-test achievement-metrics-test achievement-healer-test achievement-import-test achievement-stack-overflow-test runner-test
 
 hooks-install:
     ln -sf ../../bin/pre-commit.sh .git/hooks/pre-commit
