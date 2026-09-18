@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T19:50:54.304726+00:00"
+updated: "2026-09-18T19:53:58.354689+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Task 13 complete: added achievement_dinosaur.py and finite run_achievement_dinosaur.py. Preflight checks even world size, Dinosaur unlock, live Apple cactus cost, and full-run cactus inventory before clear(); the existing Hamiltonian cycle fills the tail until its expected blocking move, then one Straw Hat change credits and verifies the bone delta. Harness covers preflight isolation, missing Apple hat restoration, exact success sequence, and finite runner boundary. Full just check passed; live one-million-bone result remains in-game validation.
+Task 14 complete: added pure achievement_polyculture.py coordinate predicates for shared Hay and Carrot modes using disjoint 4x4 primary regions, three owned companion slots, and explicit guard tiles. Harness validates one role per coordinate and ownership/coverage for 8x8, 16x16, and 32x32 worlds. Full just check passed.
 
 ## Notes
 
@@ -76,3 +76,7 @@ Task 13 complete: added achievement_dinosaur.py and finite run_achievement_dinos
 ### 2026-09-18T19:50:54.304712+00:00
 
 Task 14 complete: added pure achievement_polyculture.py coordinate predicates for shared Hay and Carrot modes using disjoint 4x4 primary regions, three owned companion slots, and explicit guard tiles. Harness validates one role per coordinate and ownership/coverage for 8x8, 16x16, and 32x32 worlds. Full just check passed.
+
+### 2026-09-18T19:53:58.354675+00:00
+
+Task 15 complete: implemented perform_polculture_transaction in achievement_polyculture.py. It establishes a mode-specific primary, reads and validates the documented get_companion() tuple, rejects or bounded-rerolls invalid own-primary requests, plants only owned companion targets with entity-specific ground conversion, waits for maturity, harvests once, and restores the primary. Harness covers all four companion types, ground rules, failed planting, out-of-region requests, and reroll ownership. Full just check passed.

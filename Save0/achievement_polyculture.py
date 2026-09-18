@@ -1,5 +1,8 @@
 """Pure coordinate layout for achievement polyculture workers."""
 
+from navigation import move_to
+
+
 HAY_MODE = "Hay"
 CARROT_MODE = "Carrot"
 
@@ -8,6 +11,7 @@ COMPANION_ROLE = "companion"
 GUARD_ROLE = "guard"
 
 TEMPLATE_SIZE = 4
+MAX_TRANSACTION_ATTEMPTS = 3
 
 
 def is_supported_mode(mode) -> bool:
@@ -93,3 +97,120 @@ def get_companion_positions_for_primary(
                 positions.append((x, y))
 
     return positions
+
+
+def get_primary_entity(mode):
+    if mode == HAY_MODE:
+        return Entities.Grass
+
+    if mode == CARROT_MODE:
+        return Entities.Carrot
+
+    return None
+
+
+def is_supported_companion_entity(entity) -> bool:
+    return (
+        entity == Entities.Grass
+        or entity == Entities.Bush
+        or entity == Entities.Tree
+        or entity == Entities.Carrot
+    )
+
+
+def plant_entity_for_transaction(entity) -> bool:
+    if entity == Entities.Grass:
+        if get_ground_type() != Grounds.Grassland:
+            till()
+    elif get_ground_type() != Grounds.Soil:
+        till()
+
+    return plant(entity)
+
+
+def establish_primary(primary_entity) -> bool:
+    current_entity = get_entity_type()
+
+    if current_entity == primary_entity:
+        return True
+
+    if current_entity != None:
+        return False
+
+    return plant_entity_for_transaction(primary_entity)
+
+
+def get_transaction_companion(primary_x: int, primary_y: int, mode):
+    companion = get_companion()
+
+    if companion == None:
+        return None
+
+    companion_entity = companion[0]
+    companion_x, companion_y = companion[1]
+
+    if not is_supported_companion_entity(companion_entity):
+        return False
+
+    if not is_allowed_companion_coordinate(
+        companion_x,
+        companion_y,
+        primary_x,
+        primary_y,
+        mode,
+    ):
+        return False
+
+    return companion_entity, companion_x, companion_y
+
+
+def wait_for_primary() -> bool:
+    for _check in range(MAX_TRANSACTION_ATTEMPTS * 10000):
+        if can_harvest():
+            return True
+
+    return False
+
+
+def perform_polculture_transaction(primary_x: int, primary_y: int, mode) -> bool:
+    if not is_primary_tile(primary_x, primary_y, mode):
+        return False
+
+    primary_entity = get_primary_entity(mode)
+
+    for _attempt in range(MAX_TRANSACTION_ATTEMPTS):
+        move_to(primary_x, primary_y)
+
+        if not establish_primary(primary_entity):
+            return False
+
+        companion = get_transaction_companion(primary_x, primary_y, mode)
+
+        if companion == None:
+            return False
+
+        if not companion:
+            if not can_harvest() or not harvest():
+                return False
+            continue
+
+        companion_entity, companion_x, companion_y = companion
+        move_to(companion_x, companion_y)
+
+        if get_entity_type() != None and get_entity_type() != companion_entity:
+            return False
+
+        if get_entity_type() == None and not plant_entity_for_transaction(companion_entity):
+            return False
+
+        move_to(primary_x, primary_y)
+
+        if not wait_for_primary():
+            return False
+
+        if not harvest():
+            return False
+
+        return plant_entity_for_transaction(primary_entity)
+
+    return False
