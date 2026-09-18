@@ -10,7 +10,7 @@ PRIMARY_ROLE = "primary"
 COMPANION_ROLE = "companion"
 GUARD_ROLE = "guard"
 
-TEMPLATE_SIZE = 4
+TEMPLATE_SIZE = 8
 MAX_TRANSACTION_ATTEMPTS = 3
 
 
@@ -214,3 +214,72 @@ def perform_polculture_transaction(primary_x: int, primary_y: int, mode) -> bool
         return plant_entity_for_transaction(primary_entity)
 
     return False
+
+
+def get_polculture_worker_jobs(world_size: int, mode):
+    positions = get_primary_positions(world_size, mode)
+    capacity = max_drones()
+
+    if capacity <= 0:
+        capacity = 1
+
+    if len(positions) < capacity:
+        capacity = len(positions)
+
+    jobs = []
+    for index in range(capacity):
+        primary_x, primary_y = positions[index]
+        jobs.append((primary_x, primary_y, mode))
+
+    return jobs
+
+
+def run_polculture_worker_for_cycles(job, cycle_count: int) -> bool:
+    primary_x, primary_y, mode = job
+
+    for _cycle in range(cycle_count):
+        if not perform_polculture_transaction(primary_x, primary_y, mode):
+            return False
+
+    return True
+
+
+def run_polculture_worker(job) -> bool:
+    primary_x, primary_y, mode = job
+
+    while True:
+        if not perform_polculture_transaction(primary_x, primary_y, mode):
+            quick_print("Polyculture worker failed")
+            return False
+
+
+def start_polculture_workers(jobs):
+    parent_jobs = []
+    worker_handles = []
+
+    for index in range(len(jobs) - 1):
+        worker = spawn_drone(run_polculture_worker, jobs[index])
+
+        if worker == None:
+            parent_jobs.append(jobs[index])
+        else:
+            worker_handles.append(worker)
+
+    parent_jobs.append(jobs[len(jobs) - 1])
+    return parent_jobs, worker_handles
+
+
+def run_polculture_workers(world_size: int, mode) -> bool:
+    jobs = get_polculture_worker_jobs(world_size, mode)
+
+    if len(jobs) == 0:
+        return False
+
+    parent_jobs, _worker_handles = start_polculture_workers(jobs)
+
+    while True:
+        for index in range(len(parent_jobs)):
+            primary_x, primary_y, primary_mode = parent_jobs[index]
+
+            if not perform_polculture_transaction(primary_x, primary_y, primary_mode):
+                return False

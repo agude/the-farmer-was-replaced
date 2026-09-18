@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T19:53:58.354689+00:00"
+updated: "2026-09-18T19:56:51.175861+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Task 14 complete: added pure achievement_polyculture.py coordinate predicates for shared Hay and Carrot modes using disjoint 4x4 primary regions, three owned companion slots, and explicit guard tiles. Harness validates one role per coordinate and ownership/coverage for 8x8, 16x16, and 32x32 worlds. Full just check passed.
+Task 15 complete: implemented perform_polculture_transaction in achievement_polyculture.py. It establishes a mode-specific primary, reads and validates the documented get_companion() tuple, rejects or bounded-rerolls invalid own-primary requests, plants only owned companion targets with entity-specific ground conversion, waits for maturity, harvests once, and restores the primary. Harness covers all four companion types, ground rules, failed planting, out-of-region requests, and reroll ownership. Full just check passed.
 
 ## Notes
 
@@ -80,3 +80,7 @@ Task 14 complete: added pure achievement_polyculture.py coordinate predicates fo
 ### 2026-09-18T19:53:58.354675+00:00
 
 Task 15 complete: implemented perform_polculture_transaction in achievement_polyculture.py. It establishes a mode-specific primary, reads and validates the documented get_companion() tuple, rejects or bounded-rerolls invalid own-primary requests, plants only owned companion targets with entity-specific ground conversion, waits for maturity, harvests once, and restores the primary. Harness covers all four companion types, ground rules, failed planting, out-of-region requests, and reroll ownership. Full just check passed.
+
+### 2026-09-18T19:56:51.175847+00:00
+
+Task 16 complete: added persistent polyculture worker scheduling with an 8x8 sparse template, capacity bounded by max_drones(), stable tuple-owned regions, persistent child workers, parent-owned fallback jobs when spawn fails, and no shared mutable correctness globals or farm-wide dispatch joins. The CPython scheduler harness runs 1,000 transactions and verifies capacity/fallback ownership. Full just check passed.
