@@ -50,8 +50,8 @@ def test_parent_failures_do_not_stop_healthy_parent_jobs() -> None:
 
     workers.run_reusable_maze_worker = run_worker
     workers.quick_print = lambda message: messages.append(message)
-    if not workers.run_maze_parent_jobs(jobs):
-        raise AssertionError("parent scheduler reported failure after removing failed jobs")
+    if workers.run_maze_parent_jobs(jobs):
+        raise AssertionError("parent scheduler reported success after removing failed jobs")
     if calls != [2, 1, 0]:
         raise AssertionError(f"parent scheduler stopped before healthy jobs ran: {calls}")
     if len(messages) != len(jobs):

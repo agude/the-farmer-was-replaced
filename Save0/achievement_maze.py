@@ -396,7 +396,7 @@ def run_maze_parent_jobs(parent_jobs):
             report_maze_worker_failure(job, result)
             active_jobs.pop(index)
 
-    return True
+    return False
 
 
 def run_maze_workers() -> bool:
