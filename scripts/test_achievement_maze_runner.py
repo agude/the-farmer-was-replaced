@@ -35,6 +35,7 @@ def test_runner_delegates_parallel_workers_and_reports_delta() -> None:
         ("achievement_maze", "run_maze_workers"),
         ("achievement_metrics", "get_elapsed_time"),
         ("achievement_metrics", "get_item_delta"),
+        ("achievement_metrics", "get_items_per_minute"),
         ("achievement_metrics", "start_item_measurement"),
         ("achievement_metrics", "start_time_measurement"),
     }
@@ -72,6 +73,12 @@ def test_runner_delegates_parallel_workers_and_reports_delta() -> None:
         raise AssertionError("Maze runner lost Gold delta accounting")
     if "get_elapsed_time" not in source or "starting_time" not in source:
         raise AssertionError("Maze runner lost elapsed-time diagnostics")
+    if "elapsed_seconds" not in source or " seconds" not in source:
+        raise AssertionError("Maze runner does not label game time in seconds")
+    if "get_items_per_minute" not in source or "gold_per_minute" not in source:
+        raise AssertionError("Maze runner lost Gold rate diagnostics")
+    if "elapsed_ticks" in source or " ticks" in source:
+        raise AssertionError("Maze runner mislabels game time as ticks")
 
 
 def main() -> None:
