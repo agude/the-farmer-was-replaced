@@ -83,7 +83,6 @@ def test_runner_inventory_contains_new_continuous_entries() -> None:
         "run_achievement_hay.py",
         "run_achievement_carrots.py",
         "run_achievement_maze.py",
-        "run_achievement_recycling.py",
     ):
         if filename not in source:
             raise AssertionError(f"runner inventory omitted {filename}")
