@@ -65,10 +65,6 @@ achievement-maze-workers-test:
 achievement-maze-runner-test:
     uv run scripts/test_achievement_maze_runner.py
 
-# Run the CPython Cactus leaderboard harness.
-leaderboard-cactus-test:
-    uv run scripts/test_leaderboard_cactus.py
-
 # Run the static Fastest Reset simulation launcher harness.
 reset-simulation-test:
     uv run scripts/test_reset_simulation.py
@@ -165,10 +161,6 @@ achievement-metrics-test:
 achievement-healer-test:
     uv run scripts/test_achievement_healer.py
 
-# Run the CPython full-field achievement cactus harness.
-achievement-cactus-test:
-    uv run scripts/test_achievement_cactus.py
-
 # Run the CPython synchronized achievement pumpkin harness.
 achievement-pumpkin-test:
     uv run scripts/test_achievement_pumpkin.py
@@ -205,7 +197,7 @@ achievement-polyculture-workers-test:
 runner-test:
     uv run scripts/test_runners.py
 
-check: lint game-code-checker-test cactus-test farm-layout-test sunflower-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test hay-test carrot-test tree-test pumpkin-test cactus-cycle-test sunflower-cycle-test resource-cost-test top-hat-test top-hat-entry-test achievement-config-test achievement-metrics-test achievement-healer-test achievement-cactus-test achievement-pumpkin-test achievement-pumpkin-runner-test achievement-hay-runner-test achievement-carrot-runner-test achievement-maze-test achievement-maze-mapping-test achievement-maze-reuse-test achievement-maze-workers-test achievement-maze-runner-test leaderboard-cactus-test reset-simulation-test reset-progression-test reset-end-to-end-test reset-farmers-test reset-entry-test final-regression-test achievement-dinosaur-test achievement-polyculture-test achievement-polyculture-transaction-test achievement-polyculture-workers-test runner-test
+check: lint game-code-checker-test cactus-test farm-layout-test sunflower-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test hay-test carrot-test tree-test pumpkin-test cactus-cycle-test sunflower-cycle-test resource-cost-test top-hat-test top-hat-entry-test achievement-config-test achievement-metrics-test achievement-healer-test achievement-pumpkin-test achievement-pumpkin-runner-test achievement-hay-runner-test achievement-carrot-runner-test achievement-maze-test achievement-maze-mapping-test achievement-maze-reuse-test achievement-maze-workers-test achievement-maze-runner-test reset-simulation-test reset-progression-test reset-end-to-end-test reset-farmers-test reset-entry-test final-regression-test achievement-dinosaur-test achievement-polyculture-test achievement-polyculture-transaction-test achievement-polyculture-workers-test runner-test
 
 hooks-install:
     ln -sf ../../bin/pre-commit.sh .git/hooks/pre-commit

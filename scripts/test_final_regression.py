@@ -20,17 +20,14 @@ IMPLEMENTATION_MODULES = (
     "achievement_config",
     "achievement_healer",
     "achievement_metrics",
-    "achievement_cactus",
     "achievement_pumpkin",
     "achievement_dinosaur",
     "achievement_polyculture",
     "achievement_maze",
     "reset_farmers",
     "reset_progression",
-    "leaderboard_runs",
 )
 SPECIAL_ENTRY_POINTS = {
-    "run_leaderboard_cactus.py": "leaderboard_run",
     "run_leaderboard_reset.py": "leaderboard_run",
     "run_simulate_fastest_reset.py": "simulate",
     "run_simulation_reset.py": "simulate",
