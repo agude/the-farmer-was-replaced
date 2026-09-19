@@ -1,7 +1,7 @@
 ---
 status: in_progress
 created: "2026-09-18T19:20:09.521219+00:00"
-updated: "2026-09-18T22:51:23.079831+00:00"
+updated: "2026-09-19T01:03:45.715743+00:00"
 started: "2026-09-18T19:20:16.268118+00:00"
 approach: Work through plan.md in order, completing each task with focused validation and an atomic commit.
 criteria:
@@ -17,7 +17,7 @@ files:
 
 # Implement achievement runner plan
 
-Simulation isolation correction: commit 13805f9 changes the ten-seed launcher to pass fresh empty unlock, item, and global dictionaries on every simulate call, preventing cross-seed contamination. Focused simulation tests and full just check pass; live seed results remain unverified.
+Static Tasks 1-6 implementation and audit complete: explicit unfavorable Carrot sequence with faithful Grass/Hay, Bush/Tree/Wood, and Carrot/Carrot yields; unique far-guard Hay supply ownership; live-cost replenishment and unsupported-input diagnostics; optional reset Water waits; corrected clear/harvest and maze-final-treasure mocks. Focused tests, git diff --check, and full just check pass. Task 7 remains unverified because no game, Steam, Wine, Godot, or simulator runtime is available in this workspace.
 
 ## Notes
 
@@ -192,3 +192,11 @@ Simulation isolation correction: commit 13805f9 changes the ten-seed launcher to
 ### 2026-09-18T22:51:23.079803+00:00
 
 Reset evidence reporting: commit 7118947 adds a success diagnostic from run_reset_progression with status, final Leaderboard level, and elapsed seconds. The reduced end-to-end test asserts it; existing failure diagnostics retain phase, status, missing resource, level, and elapsed seconds. Full just check passes. Game-side seed results remain unverified.
+
+### 2026-09-19T01:00:51.644564+00:00
+
+Static Tasks 1-6 implementation and audit complete: explicit unfavorable Carrot sequence with faithful Grass/Hay, Bush/Tree/Wood, and Carrot/Carrot yields; unique far-guard Hay supply ownership; live-cost replenishment and unsupported-input diagnostics; optional reset Water waits; corrected clear/harvest and maze-final-treasure mocks. Focused tests, git diff --check, and full just check pass. Task 7 remains unverified because no game, Steam, Wine, Godot, or simulator runtime is available in this workspace.
+
+### 2026-09-19T01:03:45.715730+00:00
+
+Continuation revalidation: plan.md now records directly proven automated criteria for Tasks 1-6; the two pre-fix failure-process criteria remain unchecked because current-state evidence cannot prove historical execution. The explicit supply-tile no-direct-work test and full repository check pass. Runtime availability was rechecked; no Steam, Wine, Godot, game process, or simulator handle exists, so Task 7 result tables remain unfilled.

@@ -15,10 +15,13 @@ SAVE_DIRECTORY = Path(__file__).resolve().parents[1] / "Save0"
 sys.path.insert(0, str(SAVE_DIRECTORY))
 
 import achievement_maze as reusable  # noqa: E402
+import planting  # noqa: E402
 
 
 class Entities:
+    Grass = "Grass"
     Bush = "Bush"
+    Tree = "Tree"
     Treasure = "Treasure"
 
 
@@ -42,12 +45,15 @@ class ReuseSimulator:
         self.events = []
         self.use_item_calls = []
         self.map_calls = 0
+        self.map_sizes = []
         self.plant_result = True
         self.fail_use_call = None
         self.find_calls = 0
         self.follow_calls = 0
         self.follow_results = []
         self.treasure_present = False
+        self.treasure_position = None
+        self.other_entities = {}
         self.missing_treasure = False
 
     def install(self) -> None:
@@ -55,16 +61,21 @@ class ReuseSimulator:
         reusable.Grounds = Grounds
         reusable.Items = Items
         reusable.Unlocks = Unlocks
+        planting.Entities = Entities
+        planting.Grounds = Grounds
         reusable.num_unlocked = lambda _unlock: 2
         reusable.num_items = lambda _item: self.inventory
         reusable.get_world_size = lambda: 32
         reusable.get_ground_type = lambda: Grounds.Grassland
+        planting.get_ground_type = reusable.get_ground_type
         reusable.till = lambda: self.events.append("till")
+        planting.till = reusable.till
         reusable.plant = self.plant
         reusable.use_item = self.use_item
         reusable.get_entity_type = self.get_entity_type
+        reusable.clear = self.clear
         reusable.can_harvest = lambda: False
-        reusable.harvest = lambda: self.events.append("harvest") or True
+        reusable.harvest = self.harvest
         reusable.move_to = self.move_to
         reusable.get_pos_x = lambda: self.position[0]
         reusable.get_pos_y = lambda: self.position[1]
@@ -78,12 +89,35 @@ class ReuseSimulator:
 
     def plant(self, _entity) -> bool:
         self.events.append("plant")
+        self.other_entities[self.position] = _entity
         return self.plant_result
 
     def get_entity_type(self):
-        if self.treasure_present and not self.missing_treasure:
+        if self.position in self.other_entities:
+            return self.other_entities[self.position]
+        if (
+            self.treasure_present
+            and not self.missing_treasure
+            and self.position == self.treasure_position
+        ):
             return Entities.Treasure
         return None
+
+    def clear(self) -> None:
+        self.events.append("clear")
+        self.other_entities.clear()
+        self.treasure_present = False
+        self.position = (0, 0)
+
+    def harvest(self) -> bool:
+        self.events.append("harvest")
+        if self.position in self.other_entities:
+            self.other_entities.pop(self.position)
+            return True
+        if self.get_entity_type() != Entities.Treasure:
+            return False
+        self.treasure_present = False
+        return True
 
     def use_item(self, item, amount) -> bool:
         self.use_item_calls.append((item, amount))
@@ -92,6 +126,15 @@ class ReuseSimulator:
         if self.inventory < amount:
             return False
         self.inventory -= amount
+        self.other_entities.pop(self.position, None)
+        if len(self.use_item_calls) == 1:
+            self.treasure_present = True
+            self.treasure_position = self.position
+        else:
+            if self.position[0] == 2:
+                self.treasure_position = (3, self.position[1])
+            else:
+                self.treasure_position = (2, self.position[1])
         return True
 
     def map_maze(
@@ -103,17 +146,28 @@ class ReuseSimulator:
         _maze_size,
     ):
         self.map_calls += 1
-        self.treasure_present = True
+        self.map_sizes.append(_maze_size)
+        if not self.treasure_present:
+            self.treasure_present = True
+            self.treasure_position = self.position
         return {"edges": {}, "tiles": []}
 
     def find_treasure_path(self, _maze_map, _start_x, _start_y):
         self.find_calls += 1
-        return []
+        if self.get_entity_type() == Entities.Treasure:
+            return []
+        return ["East"] if self.treasure_position[0] > self.position[0] else ["West"]
 
     def follow_maze_path(self, _path) -> bool:
         self.follow_calls += 1
         if self.follow_results:
             return self.follow_results.pop(0)
+        if _path:
+            direction = _path[0]
+            if direction == "East":
+                self.position = (self.position[0] + 1, self.position[1])
+            else:
+                self.position = (self.position[0] - 1, self.position[1])
         return True
 
 
@@ -133,10 +187,32 @@ def test_exact_cost_and_three_hundred_successes() -> None:
         raise AssertionError(f"300 relocations did not complete: {result}")
     if len(simulator.use_item_calls) != reusable.MAZE_REUSE_LIMIT + 1:
         raise AssertionError("creation and relocation use count changed")
+    if set(simulator.map_sizes) != {reusable.MAZE_REGION_SIZE}:
+        raise AssertionError("maze geometry used Weird Substance cost instead of side length")
     if simulator.map_calls != 1:
         raise AssertionError("successful reuse remapped a stable maze")
+    if simulator.follow_calls != reusable.MAZE_REUSE_LIMIT + 1:
+        raise AssertionError("reusable maze did not follow every relocation and final path")
+    if simulator.events.count("harvest") != 1:
+        raise AssertionError("reusable maze did not harvest the final treasure exactly once")
     if simulator.inventory != 0:
         raise AssertionError("exact reusable maze budget was not consumed")
+
+
+def test_probe_harvests_one_tile_without_farm_clear_or_soil() -> None:
+    simulator = ReuseSimulator(16)
+    simulator.other_entities[(4, 4)] = "old entity"
+    simulator.other_entities[(9, 9)] = "neighbor"
+    simulator.install()
+
+    if not reusable.create_probe_maze(4, 4, 8):
+        raise AssertionError("probe maze setup failed from an occupied Grassland tile")
+    if simulator.other_entities.get((9, 9)) != "neighbor":
+        raise AssertionError("probe maze setup removed an unrelated farm entity")
+    if simulator.position != (4, 4):
+        raise AssertionError("probe maze setup reset the drone position")
+    if "clear" in simulator.events or "till" in simulator.events:
+        raise AssertionError("probe maze setup used farm clear or Soil preparation")
 
 
 def test_counter_advances_only_after_successful_relocation() -> None:
@@ -201,11 +277,14 @@ def test_preflight_rejects_missing_budget_without_actions() -> None:
 
 def main() -> None:
     test_exact_cost_and_three_hundred_successes()
+    test_probe_harvests_one_tile_without_farm_clear_or_soil()
     test_counter_advances_only_after_successful_relocation()
     test_exhaustion_and_blocked_move_recovery_are_distinct()
     test_missing_treasure_is_not_counted_as_a_relocation()
     test_preflight_rejects_missing_budget_without_actions()
-    print("Passed reusable maze cost, 300-relocation, counter, exhaustion, and recovery tests")
+    print(
+        "Passed reusable maze setup, cost, 300-relocation, counter, exhaustion, and recovery tests"
+    )
 
 
 if __name__ == "__main__":

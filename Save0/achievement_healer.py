@@ -41,7 +41,8 @@ def prepare_healer_tile() -> bool:
         return True
 
     if entity != None:
-        clear()
+        # Harvesting an unready entity intentionally clears only this tile.
+        harvest()
         if get_entity_type() != None:
             quick_print("Healer failed: isolated tile could not be cleared")
             return False

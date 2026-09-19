@@ -15,10 +15,13 @@ SAVE_DIRECTORY = Path(__file__).resolve().parents[1] / "Save0"
 sys.path.insert(0, str(SAVE_DIRECTORY))
 
 import maze  # noqa: E402
+import planting  # noqa: E402
 
 
 class Entities:
+    Grass = "Grass"
     Bush = "Bush"
+    Tree = "Tree"
     Hedge = "Hedge"
     Treasure = "Treasure"
 
@@ -41,6 +44,8 @@ maze.Entities = Entities
 maze.Grounds = Grounds
 maze.Items = Items
 maze.Unlocks = Unlocks
+planting.Entities = Entities
+planting.Grounds = Grounds
 
 
 class MazePathSimulator:
@@ -154,11 +159,13 @@ class FarmSimulator:
     def install(self) -> None:
         maze.clear = self.clear
         maze.get_ground_type = self.get_ground_type
+        planting.get_ground_type = self.get_ground_type
         maze.get_world_size = self.get_world_size
         maze.num_items = self.num_items
         maze.num_unlocked = self.num_unlocked
         maze.plant = self.plant
         maze.till = self.till
+        planting.till = self.till
         maze.use_item = self.use_item
         maze.solve_maze = self.solve_maze
 
@@ -226,6 +233,8 @@ def test_cost_and_repeated_fresh_mazes() -> None:
         raise AssertionError("fresh maze farming did not clear exactly once")
     if simulator.plant_calls != 2 or simulator.solve_calls != 2:
         raise AssertionError("fresh maze farming did not repeat to the gold target")
+    if "till" in simulator.events:
+        raise AssertionError("maze creation converted Grassland before planting Bush")
     if simulator.use_item_calls != [
         (Items.Weird_Substance, 16),
         (Items.Weird_Substance, 16),

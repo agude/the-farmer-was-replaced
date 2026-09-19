@@ -85,9 +85,7 @@ def wait_for_crop(entity) -> bool:
             return False
         if can_harvest():
             return True
-        if num_unlocked(Unlocks.Watering) > 0 and get_water() < 0.2:
-            if not use_item(Items.Water):
-                return False
+        water_crop_if_available()
 
         do_a_flip()
         current_tick = get_tick_count()
@@ -105,6 +103,39 @@ def wait_for_crop(entity) -> bool:
     return False
 
 
+def water_crop_if_available() -> None:
+    if num_unlocked(Unlocks.Watering) == 0:
+        return
+    if get_water() >= 0.2 or num_items(Items.Water) <= 0:
+        return
+
+    use_item(Items.Water)
+
+
+def wait_for_fertilizer() -> bool:
+    last_tick = get_tick_count()
+    stagnant_checks = 0
+
+    for _check in range(MAX_CROP_WAIT_CHECKS):
+        if num_items(Items.Fertilizer) > 0:
+            return True
+
+        do_a_flip()
+        current_tick = get_tick_count()
+        if current_tick == last_tick:
+            stagnant_checks += 1
+        else:
+            last_tick = current_tick
+            stagnant_checks = 0
+
+        if stagnant_checks >= MAX_STAGNANT_CROP_WAIT_CHECKS:
+            quick_print("Reset producer clock stopped while waiting for Fertilizer")
+            return False
+
+    quick_print("Reset producer fertilizer did not replenish")
+    return False
+
+
 def prepare_crop(entity, input_depth: int, harvest_ready: bool = True) -> bool:
     current_entity = get_entity_type()
     if current_entity == entity:
@@ -117,12 +148,10 @@ def prepare_crop(entity, input_depth: int, harvest_ready: bool = True) -> bool:
             return True
         return wait_for_crop(entity) and harvest()
 
-    if current_entity != None:
-        if current_entity == Entities.Dead_Pumpkin:
-            clear()
-        else:
-            if not wait_for_crop(current_entity) or not harvest():
-                return False
+    # Dead pumpkins disappear when the replacement plant is placed.
+    if current_entity != None and current_entity != Entities.Dead_Pumpkin:
+        if not wait_for_crop(current_entity) or not harvest():
+            return False
         if get_entity_type() != None:
             return False
 
@@ -159,7 +188,7 @@ def farm_crop(item, entity, unlock_target, required_amount: int, input_depth: in
 
 
 def farm_weird_substance(required_amount: int) -> bool:
-    if num_unlocked(Unlocks.Fertilizer) == 0 or num_items(Items.Fertilizer) <= 0:
+    if num_unlocked(Unlocks.Fertilizer) == 0:
         return False
 
     target_amount = num_items(Items.Weird_Substance) + required_amount
@@ -176,6 +205,8 @@ def farm_weird_substance(required_amount: int) -> bool:
         if not prepare_crop(Entities.Grass, 0, False):
             return False
         if not wait_for_crop(Entities.Grass):
+            return False
+        if not wait_for_fertilizer():
             return False
         if not use_item(Items.Fertilizer):
             return False

@@ -58,7 +58,7 @@ class HealerSimulator:
         achievement_healer.get_entity_type = lambda: self.entity
         achievement_healer.get_ground_type = lambda: self.ground
         achievement_healer.till = self.till
-        achievement_healer.clear = self.clear
+        achievement_healer.harvest = self.harvest
         achievement_healer.plant = self.plant
         achievement_healer.num_items = lambda item: self.inventory[item]
         achievement_healer.use_item = self.use_item
@@ -81,9 +81,12 @@ class HealerSimulator:
         self.events.append("till")
         self.ground = Grounds.Grassland
 
-    def clear(self) -> None:
-        self.events.append("clear")
+    def harvest(self) -> bool:
+        self.events.append("harvest")
+        if self.entity is None:
+            return False
         self.entity = None
+        return True
 
     def plant(self, entity: str) -> bool:
         self.events.append("plant")
@@ -123,13 +126,13 @@ def test_grassland_tile_is_planted_without_tilling() -> None:
         raise AssertionError(f"Grassland tile was tilled unexpectedly: {simulator.events}")
 
 
-def test_occupied_tile_is_cleared_before_replacement() -> None:
+def test_occupied_tile_is_harvested_before_replacement() -> None:
     simulator = HealerSimulator(Grounds.Grassland, Entities.Tree)
     simulator.install()
 
     if not achievement_healer.prepare_healer_tile():
         raise AssertionError("Occupied tile preparation failed")
-    if simulator.events != ["clear", "plant"]:
+    if simulator.events != ["harvest", "plant"]:
         raise AssertionError(f"Occupied tile used the wrong setup sequence: {simulator.events}")
 
 
@@ -183,7 +186,7 @@ def test_run_uses_both_curing_items() -> None:
 def main() -> None:
     test_soil_tile_is_tilled_before_grass_is_planted()
     test_grassland_tile_is_planted_without_tilling()
-    test_occupied_tile_is_cleared_before_replacement()
+    test_occupied_tile_is_harvested_before_replacement()
     test_existing_grass_is_reused_and_setup_is_idempotent()
     test_resource_preflight_does_not_modify_the_field()
     test_runner_is_a_thin_finite_entry_point()

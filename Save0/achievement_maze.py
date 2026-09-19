@@ -5,6 +5,7 @@ from achievement_config import MAZE_REGION_COUNT
 from achievement_config import MAZE_REGION_ROWS
 from achievement_config import MAZE_REGION_SIZE
 from navigation import move_to
+from planting import ensure_ground_for_entity
 
 
 MAZE_WORLD_WIDTH = MAZE_REGION_COLUMNS * MAZE_REGION_SIZE
@@ -358,10 +359,13 @@ def map_observed_maze_bounds():
 
 def create_probe_maze(creation_x: int, creation_y: int, substance_cost: int) -> bool:
     move_to(creation_x, creation_y)
-    clear()
+    # Probe setup owns only the creation tile; clear() would reset the farm.
+    harvest()
+    if get_entity_type() != None:
+        return False
 
-    if get_ground_type() != Grounds.Soil:
-        till()
+    if not ensure_ground_for_entity(Entities.Bush):
+        return False
     if not plant(Entities.Bush):
         return False
 
@@ -402,6 +406,7 @@ def run_maze_placement_probe() -> bool:
             + ")"
         )
 
+    # Remove all probe mazes after collecting the diagnostic bounds.
     clear()
     return True
 
@@ -509,11 +514,13 @@ def create_reusable_maze(
 
     current_entity = get_entity_type()
     if current_entity != None:
-        if not can_harvest() or not harvest():
+        # Remove a stale hedge or crop without resetting another worker's maze.
+        harvest()
+        if get_entity_type() != None:
             return False
 
-    if get_ground_type() != Grounds.Soil:
-        till()
+    if not ensure_ground_for_entity(Entities.Bush):
+        return False
 
     if not plant(Entities.Bush):
         return False
@@ -531,15 +538,16 @@ def run_reusable_maze_worker(maze_index: int, relocation_limit=MAZE_REUSE_LIMIT)
         return make_maze_worker_result(0, MAZE_WORKER_RESOURCE_EXHAUSTED)
 
     substance_cost = get_reusable_maze_substance_cost()
+    maze_size = MAZE_REGION_SIZE
     world_size = get_world_size()
-    if not is_valid_maze_index(maze_index, world_size, substance_cost):
+    if not is_valid_maze_index(maze_index, world_size, maze_size):
         return make_maze_worker_result(0, MAZE_WORKER_BLOCKED)
 
-    if not create_reusable_maze(maze_index, substance_cost, world_size, substance_cost):
+    if not create_reusable_maze(maze_index, substance_cost, world_size, maze_size):
         return make_maze_worker_result(0, MAZE_WORKER_RESOURCE_EXHAUSTED)
 
-    start_x, start_y = get_maze_start_position(maze_index, world_size, substance_cost)
-    maze_map = map_maze(maze_index, start_x, start_y, world_size, substance_cost)
+    start_x, start_y = get_maze_start_position(maze_index, world_size, maze_size)
+    maze_map = map_maze(maze_index, start_x, start_y, world_size, maze_size)
     if maze_map == None:
         return make_maze_worker_result(0, MAZE_WORKER_BLOCKED)
 
@@ -561,7 +569,7 @@ def run_reusable_maze_worker(maze_index: int, relocation_limit=MAZE_REUSE_LIMIT)
                 current_x,
                 current_y,
                 world_size,
-                substance_cost,
+                maze_size,
             )
             if maze_map == None:
                 break
@@ -590,9 +598,25 @@ def run_reusable_maze_worker(maze_index: int, relocation_limit=MAZE_REUSE_LIMIT)
         current_x = get_pos_x()
         current_y = get_pos_y()
 
-    # Harvesting away from the treasure removes an exhausted maze so the
-    # worker can create its replacement in the same owned region.
-    harvest()
+    final_path = find_treasure_path(maze_map, current_x, current_y)
+    if final_path == None:
+        return make_maze_worker_result(
+            completed_relocations,
+            MAZE_WORKER_RELOCATIONS_EXHAUSTED,
+        )
+
+    if not follow_maze_path(final_path):
+        return make_maze_worker_result(completed_relocations, MAZE_WORKER_BLOCKED)
+
+    if get_entity_type() != Entities.Treasure:
+        return make_maze_worker_result(
+            completed_relocations,
+            MAZE_WORKER_TREASURE_MISSING,
+        )
+
+    if not harvest():
+        return make_maze_worker_result(completed_relocations, MAZE_WORKER_TREASURE_MISSING)
+
     return make_maze_worker_result(completed_relocations, MAZE_WORKER_COMPLETE)
 
 
@@ -651,7 +675,7 @@ def run_maze_parent_jobs(parent_jobs):
 
 def run_maze_workers() -> bool:
     world_size = get_world_size()
-    maze_size = get_reusable_maze_substance_cost()
+    maze_size = MAZE_REGION_SIZE
     jobs = get_maze_worker_jobs(max_drones(), world_size, maze_size)
     if len(jobs) == 0:
         return False

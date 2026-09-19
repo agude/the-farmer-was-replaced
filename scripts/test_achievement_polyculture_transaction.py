@@ -31,6 +31,9 @@ class Grounds:
 
 
 class Items:
+    Hay = "Hay"
+    Wood = "Wood"
+    Carrot = "Carrot"
     Water = "Water"
 
 
@@ -76,6 +79,7 @@ class TransactionSimulator:
         transaction.num_items = self.num_items
         transaction.use_item = self.use_item
         transaction.get_tick_count = self.get_tick_count
+        transaction.get_cost = self.get_cost
 
     def move_to(self, x: int, y: int) -> None:
         self.position = (x, y)
@@ -100,6 +104,9 @@ class TransactionSimulator:
 
     def get_tick_count(self) -> int:
         return self.tick_count
+
+    def get_cost(self, _entity):
+        return {}
 
     def get_ground_type(self):
         return self.grounds.get(self.position, Grounds.Grassland)
@@ -135,7 +142,7 @@ class TransactionSimulator:
 
     def harvest(self) -> bool:
         self.events.append(("harvest", self.position))
-        if not self.can_harvest():
+        if self.get_entity_type() is None:
             return False
 
         self.harvest_count += 1
@@ -144,10 +151,104 @@ class TransactionSimulator:
 
     def clear(self) -> None:
         self.events.append(("clear", self.position))
-        self.entities.pop(self.position, None)
+        self.entities.clear()
+        self.position = (0, 0)
 
     def quick_print(self, message: str) -> None:
         self.messages.append(message)
+
+
+class CarrotSequenceSimulator(TransactionSimulator):
+    def __init__(self) -> None:
+        super().__init__(Entities.Grass)
+        self.companions = [
+            (Entities.Grass, (4, 3)),
+            (Entities.Bush, (5, 3)),
+            (Entities.Tree, (4, 4)),
+            (Entities.Bush, (5, 4)),
+            (Entities.Tree, (4, 5)),
+            (Entities.Bush, (5, 5)),
+            (Entities.Tree, (4, 6)),
+        ]
+        self.inventory = {
+            Items.Hay: 2,
+            Items.Wood: 0,
+            Items.Carrot: 0,
+            Items.Water: 1000,
+        }
+        self.input_was_exhausted = False
+        self.supply_harvests_before_exhaustion = None
+        self.supply_visits = 0
+        self.supply_visits_before_exhaustion = None
+        self.supply_harvests = 0
+        self.harvest_outputs = []
+
+    def get_cost(self, entity):
+        if entity == Entities.Carrot:
+            return {Items.Hay: 1}
+        return {}
+
+    def move_to(self, x: int, y: int) -> None:
+        super().move_to(x, y)
+        if (x, y) == (7, 7):
+            self.supply_visits += 1
+
+    def plant(self, entity) -> bool:
+        costs = {
+            Entities.Grass: {},
+            Entities.Bush: {},
+            Entities.Tree: {},
+            Entities.Carrot: {Items.Hay: 1},
+        }
+        for item in costs[entity]:
+            if self.inventory.get(item, 0) < costs[entity][item]:
+                return False
+            self.inventory[item] -= costs[entity][item]
+
+        self.events.append(("plant", self.position, entity))
+        self.entities[self.position] = entity
+        if self.inventory[Items.Hay] == 0:
+            self.input_was_exhausted = True
+            if self.supply_harvests_before_exhaustion is None:
+                self.supply_harvests_before_exhaustion = self.supply_harvests
+            if self.supply_visits_before_exhaustion is None:
+                self.supply_visits_before_exhaustion = self.supply_visits
+        return True
+
+    def can_harvest(self) -> bool:
+        return self.get_entity_type() in (
+            Entities.Grass,
+            Entities.Bush,
+            Entities.Tree,
+            Entities.Carrot,
+        )
+
+    def harvest(self) -> bool:
+        entity = self.get_entity_type()
+        self.events.append(("harvest", self.position))
+        if entity is None:
+            return False
+
+        self.entities.pop(self.position, None)
+        output_items = {
+            Entities.Grass: Items.Hay,
+            Entities.Bush: Items.Wood,
+            Entities.Tree: Items.Wood,
+            Entities.Carrot: Items.Carrot,
+        }
+        output_item = output_items[entity]
+        self.inventory[output_item] += 1
+        self.harvest_outputs.append((entity, output_item))
+        if self.position == (7, 7):
+            self.supply_harvests += 1
+        return True
+
+
+class UnsupportedInputSimulator(TransactionSimulator):
+    def get_cost(self, entity):
+        if entity == Entities.Carrot:
+            return {Items.Wood: 1}
+        return {}
 
 
 def test_all_companion_entity_types() -> None:
@@ -234,8 +335,8 @@ def test_different_existing_companion_is_replaced() -> None:
 
     if not transaction.perform_polculture_transaction(3, 3, transaction.HAY_MODE):
         raise AssertionError("transaction did not replace the old companion")
-    if ("clear", (4, 3)) not in simulator.events:
-        raise AssertionError("old companion was not cleared before replacement")
+    if ("harvest", (4, 3)) not in simulator.events:
+        raise AssertionError("old companion was not harvested before replacement")
     if simulator.entities.get((4, 3)) != Entities.Carrot:
         raise AssertionError("requested companion was not established")
 
@@ -314,6 +415,48 @@ def test_invalid_request_can_reroll_own_primary() -> None:
         raise AssertionError("reroll did not harvest only the owned primary")
 
 
+def test_carrot_worker_replenishes_hay_after_unfavorable_companions() -> None:
+    simulator = CarrotSequenceSimulator()
+    simulator.install()
+
+    if not transaction.run_polculture_worker_for_cycles(
+        (3, 3, transaction.CARROT_MODE),
+        7,
+    ):
+        raise AssertionError("Carrot worker stopped after unfavorable companions")
+    if not simulator.input_was_exhausted:
+        raise AssertionError("Carrot test never exhausted its initial Hay reserve")
+    if simulator.supply_harvests_before_exhaustion != 0:
+        raise AssertionError("Carrot worker visited its supply before Hay was exhausted")
+    if simulator.supply_visits_before_exhaustion != 0:
+        raise AssertionError("Carrot worker used supply-tile work with sufficient Hay")
+    if simulator.supply_harvests == 0:
+        raise AssertionError("Carrot worker never used its reserved Hay supply tile")
+    for entity, output_item in simulator.harvest_outputs:
+        expected_output = {
+            Entities.Grass: Items.Hay,
+            Entities.Bush: Items.Wood,
+            Entities.Tree: Items.Wood,
+            Entities.Carrot: Items.Carrot,
+        }[entity]
+        if output_item != expected_output:
+            raise AssertionError(f"{entity} produced the wrong item: {output_item}")
+
+
+def test_unsupported_carrot_input_reports_replenishment_phase() -> None:
+    simulator = UnsupportedInputSimulator(Entities.Grass)
+    simulator.install()
+
+    if transaction.perform_polculture_transaction(3, 3, transaction.CARROT_MODE):
+        raise AssertionError("unsupported Carrot input reported success")
+    messages = [message for message in simulator.messages if "phase=input-replenishment" in message]
+    if len(messages) != 1:
+        raise AssertionError(f"unsupported input was not reported clearly: {simulator.messages}")
+    message = messages[0]
+    if "item=Wood" not in message:
+        raise AssertionError(f"unsupported input diagnostic is incomplete: {message}")
+
+
 def main() -> None:
     test_all_companion_entity_types()
     test_ground_conversion_matches_requested_entity()
@@ -326,7 +469,11 @@ def main() -> None:
     test_failed_plant_does_not_harvest_primary()
     test_out_of_region_request_is_rejected()
     test_invalid_request_can_reroll_own_primary()
-    print("Passed bounded polyculture companion, ground, failure, ownership, and reroll tests")
+    test_carrot_worker_replenishes_hay_after_unfavorable_companions()
+    test_unsupported_carrot_input_reports_replenishment_phase()
+    print(
+        "Passed bounded polyculture companion, ground, failure, ownership, reroll, and sustainability tests"
+    )
 
 
 if __name__ == "__main__":

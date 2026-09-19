@@ -117,7 +117,7 @@ def test_wood_preparation_repairs_soil_and_preserves_grassland() -> None:
         raise AssertionError("Wood preparation retilled an existing Grassland tile")
 
 
-def test_dead_pumpkin_is_cleared_before_replanting() -> None:
+def test_dead_pumpkin_is_replaced_without_clear() -> None:
     install()
     state = {"entity": Entities.Dead_Pumpkin}
     events = []
@@ -131,8 +131,8 @@ def test_dead_pumpkin_is_cleared_before_replanting() -> None:
 
     if not farmers.prepare_crop(Entities.Pumpkin, 0):
         raise AssertionError("dead Pumpkin was not replaced")
-    if events != ["clear", ("plant", Entities.Pumpkin)]:
-        raise AssertionError(f"dead Pumpkin recovery actions changed: {events}")
+    if events != [("plant", Entities.Pumpkin)]:
+        raise AssertionError(f"dead Pumpkin replacement actions changed: {events}")
 
 
 def test_weird_substance_fertilizes_before_harvesting() -> None:
@@ -172,6 +172,42 @@ def test_weird_substance_fertilizes_before_harvesting() -> None:
         raise AssertionError("Weird Substance producer did not complete")
     if events != ["fertilizer", "harvest"]:
         raise AssertionError(f"Weird Substance was harvested before fertilizing: {events}")
+
+
+def test_weird_substance_waits_for_fertilizer_replenishment() -> None:
+    install()
+    state = {"weird": 0, "fertilizer": 0, "ticks": 0}
+    farmers.get_world_size = lambda: 1
+    farmers.num_unlocked = lambda _unlock: 1
+    farmers.num_items = lambda item: {
+        Items.Weird_Substance: state["weird"],
+        Items.Fertilizer: state["fertilizer"],
+    }.get(item, 0)
+    farmers.get_entity_type = lambda: Entities.Grass
+    farmers.get_cost = lambda _entity: {}
+    farmers.ensure_ground_for_entity = lambda _entity: True
+    farmers.can_harvest = lambda: True
+    farmers.get_tick_count = lambda: state["ticks"]
+
+    def do_a_flip() -> None:
+        state["ticks"] += 1
+        if state["ticks"] % 2 == 0:
+            state["fertilizer"] += 1
+
+    def use_item(item) -> bool:
+        if item != Items.Fertilizer or state["fertilizer"] <= 0:
+            return False
+        state["fertilizer"] -= 1
+        return True
+
+    farmers.do_a_flip = do_a_flip
+    farmers.use_item = use_item
+    farmers.harvest = lambda: state.update(weird=state["weird"] + 1) or True
+
+    if not farmers.farm_weird_substance(2):
+        raise AssertionError("Weird Substance producer stopped during fertilizer depletion")
+    if state["weird"] != 2 or state["ticks"] < 4:
+        raise AssertionError(f"fertilizer replenishment was not modeled: {state}")
 
 
 def test_crop_producer_completes_target_and_rotates_world_tiles() -> None:
@@ -221,6 +257,75 @@ def test_slow_crop_waits_for_clock_progress_and_stuck_crop_fails() -> None:
     if farmers.wait_for_crop(Entities.Carrot):
         raise AssertionError("stuck crop incorrectly reported maturity")
     farmers.MAX_STAGNANT_CROP_WAIT_CHECKS = 1000
+
+
+def test_crop_wait_skips_empty_water_and_uses_later_supply() -> None:
+    install()
+    state = {
+        "entity": Entities.Carrot,
+        "ticks": 0,
+        "water_inventory": 0,
+        "water_attempts": 0,
+    }
+    farmers.num_unlocked = lambda _unlock: 1
+    farmers.num_items = lambda item: state["water_inventory"] if item == Items.Water else 0
+    farmers.get_entity_type = lambda: state["entity"]
+    farmers.get_water = lambda: 0
+    farmers.can_harvest = lambda: state["ticks"] >= 5
+    farmers.get_tick_count = lambda: state["ticks"]
+
+    def do_a_flip() -> None:
+        state["ticks"] += 1
+        if state["ticks"] == 3:
+            state["water_inventory"] = 1
+
+    def use_item(item) -> bool:
+        state["water_attempts"] += 1
+        if item != Items.Water or state["water_inventory"] <= 0:
+            return False
+        state["water_inventory"] -= 1
+        return True
+
+    farmers.do_a_flip = do_a_flip
+    farmers.use_item = use_item
+    if not farmers.wait_for_crop(Entities.Carrot):
+        raise AssertionError("dry crop did not mature while Water was temporarily empty")
+    if state["water_attempts"] != 1:
+        raise AssertionError("empty Water caused an unnecessary use attempt")
+
+
+def test_failed_optional_water_does_not_stop_crop_wait() -> None:
+    install()
+    state = {"ticks": 0, "water_attempts": 0}
+    farmers.num_unlocked = lambda _unlock: 1
+    farmers.num_items = lambda item: 1 if item == Items.Water else 0
+    farmers.get_entity_type = lambda: Entities.Carrot
+    farmers.get_water = lambda: 0
+    farmers.can_harvest = lambda: state["ticks"] >= 3
+    farmers.get_tick_count = lambda: state["ticks"]
+    farmers.do_a_flip = lambda: state.update(ticks=state["ticks"] + 1)
+
+    def use_item(_item) -> bool:
+        state["water_attempts"] += 1
+        return False
+
+    farmers.use_item = use_item
+    if not farmers.wait_for_crop(Entities.Carrot):
+        raise AssertionError("failed optional Water use stopped crop growth")
+    if state["water_attempts"] == 0:
+        raise AssertionError("failed Water path was not exercised")
+
+
+def test_replaced_crop_stops_wait_immediately() -> None:
+    install()
+    flip_calls = []
+    farmers.get_entity_type = lambda: None
+    farmers.do_a_flip = lambda: flip_calls.append(True)
+
+    if farmers.wait_for_crop(Entities.Carrot):
+        raise AssertionError("replaced crop incorrectly reported maturity")
+    if flip_calls:
+        raise AssertionError("replaced crop did not fail immediately")
 
 
 def test_crop_mapping_covers_reset_outputs() -> None:
@@ -397,9 +502,10 @@ def test_wood_producer_resumes_after_plant_failure() -> None:
         raise AssertionError("Wood producer did not resume after planting recovery")
 
 
-def test_pumpkin_producer_resumes_after_dead_tile_clear_failure() -> None:
+def test_pumpkin_producer_replaces_dead_tile_directly() -> None:
     install()
-    state = {"item": 0, "entity": Entities.Dead_Pumpkin, "clear_attempts": 0}
+    state = {"item": 0, "entity": Entities.Dead_Pumpkin}
+    clear_calls = []
     farmers.get_world_size = lambda: 1
     farmers.num_unlocked = lambda _unlock: 1
     farmers.num_items = lambda item: state["item"] if item == Items.Pumpkin else 0
@@ -407,11 +513,6 @@ def test_pumpkin_producer_resumes_after_dead_tile_clear_failure() -> None:
     farmers.get_cost = lambda _entity: {}
     farmers.ensure_ground_for_entity = lambda _entity: True
     farmers.can_harvest = lambda: state["entity"] == Entities.Pumpkin
-
-    def clear() -> None:
-        state["clear_attempts"] += 1
-        if state["clear_attempts"] > 1:
-            state["entity"] = None
 
     def plant(entity) -> bool:
         state["entity"] = entity
@@ -422,13 +523,13 @@ def test_pumpkin_producer_resumes_after_dead_tile_clear_failure() -> None:
         state["entity"] = None
         return True
 
-    farmers.clear = clear
+    farmers.clear = lambda: clear_calls.append(True)
     farmers.plant = plant
     farmers.harvest = harvest
-    if farmers.farm_crop(Items.Pumpkin, Entities.Pumpkin, Unlocks.Pumpkins, 1, 0):
-        raise AssertionError("Pumpkin producer hid its dead-tile clear failure")
     if not farmers.farm_crop(Items.Pumpkin, Entities.Pumpkin, Unlocks.Pumpkins, 1, 0):
-        raise AssertionError("Pumpkin producer did not resume after dead-tile recovery")
+        raise AssertionError("Pumpkin producer did not replace the dead tile directly")
+    if clear_calls:
+        raise AssertionError("Pumpkin producer used farm-wide clear for a dead tile")
 
 
 def test_weird_substance_producer_resumes_after_fertilizer_failure() -> None:
@@ -536,21 +637,25 @@ def main() -> None:
     test_locked_crop_and_unsupported_input_fail_before_actions()
     test_fertilizer_preparation_does_not_harvest_mature_grass()
     test_wood_preparation_repairs_soil_and_preserves_grassland()
-    test_dead_pumpkin_is_cleared_before_replanting()
+    test_dead_pumpkin_is_replaced_without_clear()
     test_weird_substance_fertilizes_before_harvesting()
+    test_weird_substance_waits_for_fertilizer_replenishment()
     test_crop_producer_completes_target_and_rotates_world_tiles()
     test_slow_crop_waits_for_clock_progress_and_stuck_crop_fails()
+    test_crop_wait_skips_empty_water_and_uses_later_supply()
+    test_failed_optional_water_does_not_stop_crop_wait()
+    test_replaced_crop_stops_wait_immediately()
     test_gold_producer_repeats_funded_maze_batches()
     test_bone_producer_uses_reset_sized_dinosaur_batches()
     test_gold_and_bone_stages_preserve_current_world_size()
     test_wood_producer_resumes_after_plant_failure()
-    test_pumpkin_producer_resumes_after_dead_tile_clear_failure()
+    test_pumpkin_producer_replaces_dead_tile_directly()
     test_weird_substance_producer_resumes_after_fertilizer_failure()
     test_gold_producer_resumes_after_worker_failure()
     test_bone_producer_resumes_after_dinosaur_failure()
     test_controller_uses_reset_farmer_hook()
     print(
-        "Passed reset crop mappings, preconditions, unsupported-input, maze, and dinosaur producer tests"
+        "Passed reset crop mappings, preconditions, fertilizer wait, maze, and dinosaur producer tests"
     )
 
 

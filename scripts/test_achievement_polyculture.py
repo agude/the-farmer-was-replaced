@@ -93,6 +93,36 @@ def test_companion_slots_are_owned_and_guards_are_rejected() -> None:
                     raise AssertionError("coordinate owner is not deterministic")
 
 
+def test_supply_tiles_are_unique_guard_tiles() -> None:
+    for world_size in (8, 16, 32):
+        supply_positions = []
+
+        for primary_x, primary_y in layout.get_primary_positions(world_size, layout.CARROT_MODE):
+            supply_x, supply_y = layout.get_primary_supply_position(primary_x, primary_y)
+            if not (0 <= supply_x < world_size and 0 <= supply_y < world_size):
+                raise AssertionError("primary supply tile is outside the world")
+            if layout.get_layout_role(supply_x, supply_y, layout.CARROT_MODE) != layout.GUARD_ROLE:
+                raise AssertionError("primary supply tile is not a guard tile")
+            if abs(supply_x - primary_x) + abs(supply_y - primary_y) <= 3:
+                raise AssertionError("primary supply tile overlaps companion range")
+            if layout.get_supply_owner(supply_x, supply_y, layout.CARROT_MODE) != (
+                primary_x,
+                primary_y,
+            ):
+                raise AssertionError("primary supply ownership is not deterministic")
+            if (supply_x, supply_y) in layout.get_companion_positions_for_primary(
+                primary_x,
+                primary_y,
+                world_size,
+                layout.CARROT_MODE,
+            ):
+                raise AssertionError("primary supply tile overlaps a companion slot")
+            supply_positions.append((supply_x, supply_y))
+
+        if len(supply_positions) != len(set(supply_positions)):
+            raise AssertionError("primary supply tiles are shared")
+
+
 def test_primary_regions_do_not_overlap() -> None:
     for world_size in (8, 16, 32):
         positions = layout.get_primary_positions(world_size, layout.CARROT_MODE)
@@ -110,6 +140,7 @@ def main() -> None:
     test_every_coordinate_has_one_role()
     test_modes_share_coordinates_but_not_layout_state()
     test_companion_slots_are_owned_and_guards_are_rejected()
+    test_supply_tiles_are_unique_guard_tiles()
     test_primary_regions_do_not_overlap()
     print("Passed 8x8, 16x16, and 32x32 Hay/Carrot polyculture layout tests")
 

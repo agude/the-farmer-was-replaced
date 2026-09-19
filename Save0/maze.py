@@ -1,5 +1,6 @@
 from farm_config import GOLD_TARGET as DEFAULT_GOLD_TARGET
 from farm_config import WEIRD_SUBSTANCE_RESERVE as DEFAULT_WEIRD_SUBSTANCE_RESERVE
+from planting import ensure_ground_for_entity
 
 
 def get_maze_substance_cost() -> int:
@@ -20,8 +21,8 @@ def can_fund_maze(substance_cost: int, substance_reserve: int) -> bool:
 
 def create_maze(substance_cost: int) -> bool:
     # Turn the current tile into a fresh full-field maze.
-    if get_ground_type() != Grounds.Soil:
-        till()
+    if not ensure_ground_for_entity(Entities.Bush):
+        return False
 
     if not plant(Entities.Bush):
         return False
@@ -83,6 +84,7 @@ def farm_mazes(gold_target=None, substance_reserve=None) -> bool:
     if not can_fund_maze(substance_cost, substance_reserve):
         return False
 
+    # Reset the farm before producing a full-field maze.
     clear()
     completed_maze = False
 
