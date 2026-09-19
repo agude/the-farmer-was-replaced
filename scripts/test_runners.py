@@ -19,10 +19,6 @@ RUNNERS = {
     "run_cactus.py": ("cactus", "farm_cactus_patch"),
     "run_pumpkins.py": ("pumpkins", "farm_pumpkin_cycle"),
     "run_sunflowers.py": ("sunflowers", "farm_sunflower_cycle"),
-    "run_achievement_pumpkin.py": (
-        "achievement_pumpkin",
-        "farm_achievement_pumpkin_cycle",
-    ),
     "run_achievement_hay.py": (
         "achievement_polyculture",
         "run_polculture_workers",

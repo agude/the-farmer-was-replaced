@@ -20,7 +20,6 @@ IMPLEMENTATION_MODULES = (
     "achievement_config",
     "achievement_healer",
     "achievement_metrics",
-    "achievement_pumpkin",
     "achievement_dinosaur",
     "achievement_polyculture",
     "achievement_maze",
