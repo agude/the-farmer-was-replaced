@@ -1,4 +1,4 @@
-"""Constants shared by achievement and leaderboard runners."""
+# Constants shared by achievement and leaderboard runners.
 
 ACHIEVEMENT_HAY_TARGET = 200000000
 ACHIEVEMENT_CARROT_TARGET = 200000000

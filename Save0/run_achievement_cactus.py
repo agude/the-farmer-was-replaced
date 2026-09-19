@@ -1,4 +1,4 @@
-"""Continuously run the full-field Cactus Master cycle."""
+# Continuously run the full-field Cactus Master cycle.
 
 from achievement_cactus import farm_achievement_cactus_cycle
 from achievement_metrics import get_item_delta

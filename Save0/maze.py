@@ -1,5 +1,5 @@
-from farm_config import GOLD_TARGET as DEFAULT_GOLD_TARGET
-from farm_config import WEIRD_SUBSTANCE_RESERVE as DEFAULT_WEIRD_SUBSTANCE_RESERVE
+from farm_config import GOLD_TARGET
+from farm_config import WEIRD_SUBSTANCE_RESERVE
 from planting import ensure_ground_for_entity
 
 
@@ -68,10 +68,10 @@ def solve_maze() -> bool:
 def farm_mazes(gold_target=None, substance_reserve=None) -> bool:
     # Create fresh mazes until the caller's target or reserve is reached.
     if gold_target == None:
-        gold_target = DEFAULT_GOLD_TARGET
+        gold_target = GOLD_TARGET
 
     if substance_reserve == None:
-        substance_reserve = DEFAULT_WEIRD_SUBSTANCE_RESERVE
+        substance_reserve = WEIRD_SUBSTANCE_RESERVE
 
     if num_items(Items.Gold) >= gold_target:
         return True

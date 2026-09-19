@@ -1,4 +1,4 @@
-"""Finite full-field Dinosaur Master harvest burst."""
+# Finite full-field Dinosaur Master harvest burst.
 
 from achievement_config import ACHIEVEMENT_BONES_TARGET
 from dinosaurs import get_full_run_cactus_cost

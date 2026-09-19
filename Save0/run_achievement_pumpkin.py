@@ -1,4 +1,4 @@
-"""Continuously run the full-field Pumpkin Master cycle."""
+# Continuously run the full-field Pumpkin Master cycle.
 
 from achievement_metrics import get_item_delta
 from achievement_metrics import start_item_measurement

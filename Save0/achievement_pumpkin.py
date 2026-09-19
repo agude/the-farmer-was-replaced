@@ -1,4 +1,4 @@
-"""Synchronized full-field pumpkin cycle for Pumpkin Master."""
+# Synchronized full-field pumpkin cycle for Pumpkin Master.
 
 from achievement_config import DEBUG_OUTPUT
 from navigation import move_to

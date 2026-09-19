@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import argparse
 import ast
+import io
 import json
 import subprocess
 import sys
+import tokenize
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -188,6 +190,39 @@ def dialect_findings(path: Path, tree: ast.AST) -> list[Finding]:
                 )
             )
 
+        if isinstance(node, ast.alias) and node.asname is not None:
+            findings.append(
+                Finding(
+                    path,
+                    node.lineno,
+                    node.col_offset + 1,
+                    "unsupported game syntax: import aliases",
+                )
+            )
+
+    return findings
+
+
+def lexical_findings(path: Path, source: str) -> list[Finding]:
+    findings: list[Finding] = []
+
+    for token in tokenize.generate_tokens(io.StringIO(source).readline):
+        if token.type != tokenize.STRING:
+            continue
+
+        unprefixed_string = token.string.lstrip("rRbBuUfF")
+        if not unprefixed_string.startswith(("'''", '"""')):
+            continue
+
+        findings.append(
+            Finding(
+                path,
+                token.start[0],
+                token.start[1] + 1,
+                "unsupported game syntax: triple-quoted strings",
+            )
+        )
+
     return findings
 
 
@@ -308,6 +343,7 @@ def check_file(path: Path, manifest: dict[str, Any]) -> list[Finding]:
 
     return (
         dialect_findings(path, tree)
+        + lexical_findings(path, source)
         + none_comparison_findings(path, tree)
         + import_findings(path, tree)
         + api_findings(path, tree, manifest)

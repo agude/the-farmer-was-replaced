@@ -1,4 +1,4 @@
-"""Launch the finite Cactus leaderboard simulation."""
+# Launch the finite Cactus leaderboard simulation.
 
 LEADERBOARD_FILE = "leaderboard_runs"
 LEADERBOARD_SPEEDUP = 4096

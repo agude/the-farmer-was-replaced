@@ -1,4 +1,4 @@
-"""Trigger the intentional Stack Overflow achievement."""
+# Trigger the intentional Stack Overflow achievement.
 
 
 def overflow() -> None:

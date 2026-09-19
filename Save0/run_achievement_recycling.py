@@ -1,4 +1,4 @@
-"""Run one reusable maze for the Recycling achievement."""
+# Run one reusable maze for the Recycling achievement.
 
 from achievement_maze import run_reusable_maze_worker
 

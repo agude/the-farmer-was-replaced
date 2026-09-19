@@ -1,4 +1,4 @@
-"""Import-safe reset progression controller contracts."""
+# Import-safe reset progression controller contracts.
 
 from reset_farmers import produce_item
 
@@ -50,7 +50,7 @@ def append_route_step(plan, unlock_target, target_level, reason, prerequisites) 
 
 
 def get_unlock_plan():
-    """Return the farm-only reset milestones in measured purchase order."""
+    # Return the farm-only reset milestones in measured purchase order.
     plan = []
     route = [
         (Unlocks.Speed, 1, "Accelerate the remaining reset stages", []),

@@ -1,4 +1,4 @@
-"""Rehearse the reset progression in an isolated simulation."""
+# Rehearse the reset progression in an isolated simulation.
 
 SIMULATION_FILE = "reset_progression"
 SIMULATION_UNLOCKS = {}

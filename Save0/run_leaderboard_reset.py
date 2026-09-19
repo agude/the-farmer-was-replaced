@@ -1,4 +1,4 @@
-"""Launch the guarded Fastest Reset leaderboard simulation."""
+# Launch the guarded Fastest Reset leaderboard simulation.
 
 LEADERBOARD_FILE = "reset_progression"
 LEADERBOARD_SPEEDUP = 256

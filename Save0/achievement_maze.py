@@ -1,4 +1,4 @@
-"""Pure disjoint layout for achievement maze workers."""
+# Pure disjoint layout for achievement maze workers.
 
 from achievement_config import MAZE_REGION_COLUMNS
 from achievement_config import MAZE_REGION_COUNT

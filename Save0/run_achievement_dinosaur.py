@@ -1,4 +1,4 @@
-"""Run one finite Dinosaur Master harvest burst."""
+# Run one finite Dinosaur Master harvest burst.
 
 from achievement_dinosaur import run_achievement_dinosaur_once
 

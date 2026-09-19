@@ -1,4 +1,4 @@
-"""Second half of the intentional Circular Import achievement cycle."""
+# Second half of the intentional Circular Import achievement cycle.
 
 import achievement_import_cycle_a
 

@@ -1,4 +1,4 @@
-"""Import-safe measurements for achievement runner throughput."""
+# Import-safe measurements for achievement runner throughput.
 
 
 def start_item_measurement(item) -> int:

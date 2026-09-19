@@ -1,4 +1,4 @@
-"""Pure coordinate layout for achievement polyculture workers."""
+# Pure coordinate layout for achievement polyculture workers.
 
 from navigation import move_to
 from planting import ensure_ground_for_entity

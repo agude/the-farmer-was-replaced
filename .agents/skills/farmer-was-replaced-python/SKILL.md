@@ -48,6 +48,8 @@ do not answer it.
 - Do not introduce classes, lambdas, comprehensions, ternary expressions,
   `async`/`await`, named arguments, standard-library imports, or unsupported
   collection methods. Confirm any less common language feature locally.
+- Do not use triple-quoted strings or import aliases (`import x as y` or
+  `from x import y as z`); the game interpreter does not support them.
 - Type annotations are accepted by current builds and useful to external
   editors, but they do not expand the game language or validate runtime
   behavior.

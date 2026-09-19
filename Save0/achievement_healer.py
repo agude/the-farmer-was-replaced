@@ -1,4 +1,4 @@
-"""Import-safe operations for the finite Healer achievement runner."""
+# Import-safe operations for the finite Healer achievement runner.
 
 
 def check_neighbor(direction, opposite) -> bool:

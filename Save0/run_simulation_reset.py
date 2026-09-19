@@ -1,4 +1,4 @@
-"""Run the ten required seeded Fastest Reset simulations."""
+# Run the ten required seeded Fastest Reset simulations.
 
 SIMULATION_FILE = "reset_progression"
 SIMULATION_SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]

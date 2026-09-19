@@ -1,4 +1,4 @@
-"""Finite operations submitted to leaderboard simulations."""
+# Finite operations submitted to leaderboard simulations.
 
 from achievement_cactus import farm_achievement_cactus_cycle
 

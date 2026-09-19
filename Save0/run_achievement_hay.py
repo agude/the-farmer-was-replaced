@@ -1,4 +1,4 @@
-"""Continuously run the Hay Master polyculture cycle."""
+# Continuously run the Hay Master polyculture cycle.
 
 from achievement_metrics import get_item_delta
 from achievement_metrics import start_item_measurement

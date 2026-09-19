@@ -1,4 +1,4 @@
-"""Unlock Healer with one isolated, harmless grass plant."""
+# Unlock Healer with one isolated, harmless grass plant.
 
 from achievement_healer import run_healer
 

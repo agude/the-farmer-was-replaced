@@ -1,4 +1,4 @@
-"""Bounded producers used only by reset progression."""
+# Bounded producers used only by reset progression.
 
 from achievement_maze import MAZE_WORKER_COMPLETE
 from achievement_maze import get_reusable_maze_substance_budget

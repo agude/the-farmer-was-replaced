@@ -9,8 +9,8 @@ from farm_config import (
 from navigation import distance_to, move_to
 from parallel_farming import dispatch_indexed_jobs
 from planting import ensure_soil
+import traversal
 from traversal import get_snake_positions
-from traversal import should_scan_forward as choose_scan_direction
 from watering import water_if_dry
 
 
@@ -41,7 +41,7 @@ def get_sunflower_positions():
 
 def should_scan_forward(positions) -> bool:
     # Return whether the first position is nearer than the last.
-    return choose_scan_direction(positions, distance_to)
+    return traversal.should_scan_forward(positions, distance_to)
 
 
 def plant_sunflower() -> bool:

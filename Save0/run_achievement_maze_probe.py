@@ -1,4 +1,4 @@
-"""Run the disabled maze-placement diagnostic when explicitly enabled."""
+# Run the disabled maze-placement diagnostic when explicitly enabled.
 
 from achievement_config import ENABLE_MAZE_PLACEMENT_PROBE
 from achievement_maze import run_maze_placement_probe

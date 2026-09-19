@@ -1,4 +1,4 @@
-"""Full-field cactus cycle for the Cactus Master achievement."""
+# Full-field cactus cycle for the Cactus Master achievement.
 
 from achievement_config import DEBUG_OUTPUT
 from cactus import maintain_cactus_tile

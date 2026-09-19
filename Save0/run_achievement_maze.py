@@ -1,4 +1,4 @@
-"""Continuously run parallel reusable mazes for Maze Master."""
+# Continuously run parallel reusable mazes for Maze Master.
 
 from achievement_maze import run_maze_workers
 from achievement_metrics import get_elapsed_time
