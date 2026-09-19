@@ -83,7 +83,8 @@ def tracked_game_files(root: Path) -> list[Path]:
     return sorted(
         root / relative_path
         for relative_path in result.stdout.splitlines()
-        if Path(relative_path).name != "__builtins__.py"
+        if (root / relative_path).is_file()
+        and Path(relative_path).name != "__builtins__.py"
         and any(part.startswith("Save") for part in Path(relative_path).parts)
     )
 

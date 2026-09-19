@@ -19,10 +19,6 @@ RUNNERS = {
     "run_cactus.py": ("cactus", "farm_cactus_patch"),
     "run_pumpkins.py": ("pumpkins", "farm_pumpkin_cycle"),
     "run_sunflowers.py": ("sunflowers", "farm_sunflower_cycle"),
-    "run_achievement_cactus.py": (
-        "achievement_cactus",
-        "farm_achievement_cactus_cycle",
-    ),
     "run_achievement_pumpkin.py": (
         "achievement_pumpkin",
         "farm_achievement_pumpkin_cycle",
@@ -52,10 +48,7 @@ IMPORTED_FINITE_RUNNERS = {
         "run_reusable_maze_worker",
     ),
 }
-PARSE_ONLY_RUNNERS = {
-    "run_achievement_import.py",
-    "run_achievement_stack_overflow.py",
-}
+PARSE_ONLY_RUNNERS = set()
 IMPORT_SAFE_IMPLEMENTATIONS = (
     "achievement_config.py",
     "achievement_healer.py",

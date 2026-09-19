@@ -7,10 +7,12 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from check_game_code import check_file
+from check_game_code import tracked_game_files
 
 
 EMPTY_MANIFEST = {"functions": {}, "enums": {}}
@@ -66,6 +68,27 @@ def test_unaliased_imports_are_allowed(save_directory: Path) -> None:
         raise AssertionError(f"valid imports were rejected: {messages}")
 
 
+def test_deleted_tracked_files_are_ignored(repository: Path) -> None:
+    save_directory = repository / "SaveTest"
+    save_directory.mkdir()
+    retained_path = save_directory / "retained.py"
+    deleted_path = save_directory / "deleted.py"
+    retained_path.write_text("VALUE = 1\n", encoding="utf-8")
+    deleted_path.write_text("VALUE = 2\n", encoding="utf-8")
+
+    subprocess.run(["git", "init", "--quiet"], cwd=repository, check=True)
+    subprocess.run(
+        ["git", "add", "SaveTest/retained.py", "SaveTest/deleted.py"],
+        cwd=repository,
+        check=True,
+    )
+    deleted_path.unlink()
+
+    files = tracked_game_files(repository)
+    if files != [retained_path]:
+        raise AssertionError(f"deleted tracked files were returned: {files}")
+
+
 def main() -> None:
     with TemporaryDirectory() as temporary_directory:
         save_directory = Path(temporary_directory) / "SaveTest"
@@ -75,6 +98,9 @@ def main() -> None:
         test_comments_and_ordinary_strings_are_allowed(save_directory)
         test_import_aliases_are_rejected(save_directory)
         test_unaliased_imports_are_allowed(save_directory)
+
+    with TemporaryDirectory() as temporary_directory:
+        test_deleted_tracked_files_are_ignored(Path(temporary_directory))
 
     print("Passed game-code checker regression tests")
 

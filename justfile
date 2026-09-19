@@ -169,21 +169,9 @@ achievement-metrics-test:
 achievement-healer-test:
     uv run scripts/test_achievement_healer.py
 
-# Run the static Circular Import entry-point harness.
-achievement-import-test:
-    uv run scripts/test_achievement_import.py
-
-# Run the static Stack Overflow entry-point harness.
-achievement-stack-overflow-test:
-    uv run scripts/test_achievement_stack_overflow.py
-
 # Run the CPython full-field achievement cactus harness.
 achievement-cactus-test:
     uv run scripts/test_achievement_cactus.py
-
-# Run the static Cactus Master runner harness.
-achievement-cactus-runner-test:
-    uv run scripts/test_achievement_cactus_runner.py
 
 # Run the CPython synchronized achievement pumpkin harness.
 achievement-pumpkin-test:
@@ -221,7 +209,7 @@ achievement-polyculture-workers-test:
 runner-test:
     uv run scripts/test_runners.py
 
-check: lint game-code-checker-test cactus-test farm-layout-test sunflower-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test hay-test carrot-test tree-test pumpkin-test cactus-cycle-test sunflower-cycle-test resource-cost-test top-hat-test top-hat-entry-test achievement-config-test achievement-metrics-test achievement-healer-test achievement-import-test achievement-stack-overflow-test achievement-cactus-test achievement-cactus-runner-test achievement-pumpkin-test achievement-pumpkin-runner-test achievement-hay-runner-test achievement-carrot-runner-test achievement-maze-test achievement-maze-mapping-test achievement-maze-reuse-test achievement-recycling-test achievement-maze-workers-test achievement-maze-runner-test leaderboard-cactus-test reset-simulation-test reset-progression-test reset-end-to-end-test reset-farmers-test reset-entry-test final-regression-test achievement-dinosaur-test achievement-polyculture-test achievement-polyculture-transaction-test achievement-polyculture-workers-test runner-test
+check: lint game-code-checker-test cactus-test farm-layout-test sunflower-test dinosaur-test regular-farming-test fertilizing-test parallel-farming-test traversal-test planting-test hay-test carrot-test tree-test pumpkin-test cactus-cycle-test sunflower-cycle-test resource-cost-test top-hat-test top-hat-entry-test achievement-config-test achievement-metrics-test achievement-healer-test achievement-cactus-test achievement-pumpkin-test achievement-pumpkin-runner-test achievement-hay-runner-test achievement-carrot-runner-test achievement-maze-test achievement-maze-mapping-test achievement-maze-reuse-test achievement-recycling-test achievement-maze-workers-test achievement-maze-runner-test leaderboard-cactus-test reset-simulation-test reset-progression-test reset-end-to-end-test reset-farmers-test reset-entry-test final-regression-test achievement-dinosaur-test achievement-polyculture-test achievement-polyculture-transaction-test achievement-polyculture-workers-test runner-test
 
 hooks-install:
     ln -sf ../../bin/pre-commit.sh .git/hooks/pre-commit
